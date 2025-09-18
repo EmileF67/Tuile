@@ -2,6 +2,7 @@
 #include <string>
 #include <stdexcept>
 
+
 // Helper local function: répète une chaîne UTF-8 'n' fois
 static std::string repeatUtf8(const std::string& s, int n) {
     std::string out;
@@ -10,9 +11,19 @@ static std::string repeatUtf8(const std::string& s, int n) {
     return out;
 }
 
-Cadre::Cadre(std::pair<int,int> x_, std::pair<int,int> y_, WINDOW* stdscr)
-    : x(x_), y(y_), win(stdscr) { }
 
+
+// --------- Classe Cadre ---------
+ // Affiche un cadre avec pour coordonnées x le coin haut gauche et y le coin bas droite.
+Cadre::Cadre(WINDOW* stdscr, std::pair<int,int> x_, std::pair<int,int> y_)
+    : win(stdscr),
+      x(x_), 
+      y(y_) 
+{}
+
+
+// --- Méthode draw() ---
+ // Dessine le cadre en lui-même.
 void Cadre::draw() {
     int r1 = x.first;
     int c1 = x.second;
@@ -38,9 +49,14 @@ void Cadre::draw() {
     }
 }
 
+// --- Méthode sep() ---
+ // Ajoute une déparation à l'orizontale à l'arrache.
+ // row est défini par rapport à la taille totale du terminal et pas par rapport aux coordonées du cadre.
 void Cadre::sep(int row) {
     int inner = y.second - x.second - 2;
     if (inner < 0) return;
     std::string line = std::string(u8"├") + repeatUtf8(u8"─", inner) + std::string(u8"┤");
     mvwaddstr(win, row, x.second, line.c_str());
 }
+
+// ---------- Fin Classe Cadre ---------
