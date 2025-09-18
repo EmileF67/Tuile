@@ -1,0 +1,1 @@
+g++ -Wall -Wextra -std=c++17 -Iinclude src/Engine/Cadre.cpp test_Cadre.cpp -lncursesw -o test_Cadre

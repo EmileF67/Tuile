@@ -1,56 +1,46 @@
-#include <ncurses.h>
+#include "Engine/Cadre.h"
 #include <string>
 #include <stdexcept>
 
+// Helper local function: répète une chaîne UTF-8 'n' fois
+static std::string repeatUtf8(const std::string& s, int n) {
+    std::string out;
+    out.reserve(s.size() * (n > 0 ? n : 0));
+    for (int i = 0; i < n; ++i) out += s;
+    return out;
+}
 
+Cadre::Cadre(std::pair<int,int> x_, std::pair<int,int> y_, WINDOW* stdscr)
+    : x(x_), y(y_), win(stdscr) { }
 
+void Cadre::draw() {
+    int r1 = x.first;
+    int c1 = x.second;
+    int r2 = y.first;
+    int c2 = y.second;
 
-class Cadre {
-// Cette classe permet de créer un cadre avec des bordures et éventuellement 
-// des séparations horizontales.
+    if (r2 - r1 < 1) throw std::runtime_error("Taille verticale trop petite");
+    if (c2 - c1 < 2) throw std::runtime_error("Taille horizontale trop petite (>=2)");
 
-private:
-    // Déclarations
-    std::pair<int, int> x; // {row1, col1}
-    std::pair<int, int> y; // {row2, col2}
-    WINDOW* win;           // Pointeur vers la fenêtre ncurses
+    int inner = c2 - c1 - 2; // nombre de '─' à dessiner entre les coins
+    std::string horiz = repeatUtf8(u8"─", inner);
 
+    std::string top = std::string(u8"╭") + horiz + std::string(u8"╮");
+    std::string bot = std::string(u8"╰") + horiz + std::string(u8"╯");
 
-public:
-    // Constructeur
-    Cadre(std::pair<int,int> x_, std::pair<int,int> y_, WINDOW* stdscr)
-        : x(x_), y(y_), win(stdscr) {}
+    mvwaddstr(win, r1, c1, top.c_str());
+    mvwaddstr(win, r2, c1, bot.c_str());
 
-
-    // Méthode draw() : dessine le cadre
-    void draw() {
-        int r1 = x.first;
-        int c1 = x.second;
-        int r2 = y.first;
-        int c2 = x.second;
-
-        // Vérifications
-        if (r2 - r1 < 1) throw std::runtime_error("Taille verticale trop petite");
-        if (c2 - c1 < 1) throw std::runtime_error("Taille horizontale trop petite");
-
-        // Ligne du haut
-        mvwaddstr(win, r1, c1, ("╭" + std::string(c2 - c1 - 2, '─') + "╮").c_str());
-        // Ligne du bas
-        mvwaddstr(win, r2, c1, ("╰" + std::string(c2 - c1 - 2, '─') + "╯").c_str());
-
-        // Colonnes verticales
-        for (int r = r1 + 1 ; r < r2 ; r++) {
-            mvwaddstr(win, r, c1, "│");
-            mvwaddstr(win, r, c2 - 1, "│");
-        }
+    // Colonnes verticales
+    for (int r = r1 + 1; r < r2; ++r) {
+        mvwaddstr(win, r, c1, u8"│");
+        mvwaddstr(win, r, c2 - 1, u8"│");
     }
+}
 
-
-    // Méthode sep() : séparation horizontale
-    void sep(int row) {
-        mvwaddstr(win, row, x.second,
-            ("├" + std::string(y.second - x.second - 2, '─') + "┤").c_str());
-    }
-
-
-};
+void Cadre::sep(int row) {
+    int inner = y.second - x.second - 2;
+    if (inner < 0) return;
+    std::string line = std::string(u8"├") + repeatUtf8(u8"─", inner) + std::string(u8"┤");
+    mvwaddstr(win, row, x.second, line.c_str());
+}
