@@ -33,7 +33,7 @@ int main() {
 
         // Définir la zone d’input dans la partie supérieure
         int inputRow = topLeft.first + 2;   // 2 lignes sous le haut du cadre
-        int inputCol = topLeft.second + 2;  // petit décalage à droite
+        int inputCol = topLeft.second + 4;  // petit décalage à droite
         int inputLen = 20;
 
         // Petit sous-cadre pour l'input

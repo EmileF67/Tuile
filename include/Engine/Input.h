@@ -14,6 +14,8 @@ private:
     std::string input_text; // contenu saisi
     bool entered = false;   // true si l'utilisateur a validé avec Entrée
 
+    int cursor_pos = 0;     // Position du curseur
+
 public:
     // Constructeur
     Input(WINDOW* stdscr, int x_, int y_, int length_, bool view_text_ = false);
