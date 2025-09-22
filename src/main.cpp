@@ -8,6 +8,7 @@
 #include "Engine/Cadre.h"
 #include "Engine/Input.h"
 #include "Engine/Popup.h"
+#include "Engine/System.h"
 
 int main() {
     setlocale(LC_ALL, "");
@@ -26,13 +27,15 @@ int main() {
         init_pair(5, COLOR_CYAN, -1);
     }
 
+    bool sharp_edges = System::isLinuxConsole();
+
     int rows, cols;
     getmaxyx(stdscr, rows, cols);
 
     // --- Cadre principal ---
     std::pair<int,int> topLeft {2, 4};
     std::pair<int,int> botRight {rows - 3, cols - 4};
-    Cadre cadre(stdscr, topLeft, botRight);
+    Cadre cadre(stdscr, topLeft, botRight, sharp_edges);
     int middle = (topLeft.first + botRight.first) / 2;
 
     // Sous-cadre pour l'input en haut
@@ -41,7 +44,7 @@ int main() {
     int inputLen = 20;
     std::pair<int,int> inputTopLeft {inputRow - 1, inputCol - 2};
     std::pair<int,int> inputBotRight {inputRow + 1, inputCol + inputLen + 1};
-    Cadre cadreInput(stdscr, inputTopLeft, inputBotRight);
+    Cadre cadreInput(stdscr, inputTopLeft, inputBotRight, sharp_edges);
 
     // Types pour rendre les choix lisibles
     using Choice = std::pair<std::string, std::string>;   // (label, icon)
@@ -83,7 +86,8 @@ int main() {
                 std::string("Confirmation"),
                 confirmation,                 // <-- nested pair<string,string>
                 std::string("Voulez-vous continuer ?"),
-                true
+                true,
+                sharp_edges
             );
         }
 

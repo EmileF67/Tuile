@@ -19,6 +19,8 @@ private:
     std::pair<std::pair<std::string,std::string>, std::pair<std::string,std::string>> choices;
 
     bool view_text;
+    bool sharp_edges;
+
     int selected = 0;
     bool entered = false;
 
@@ -31,7 +33,8 @@ public:
           std::string title_,
           std::pair<std::pair<std::string,std::string>, std::pair<std::string,std::string>> choices_,
           std::string ask_text_,
-          bool view_text_);
+          bool view_text_,
+          bool sharp_edges_);
 
     ~Popup();
 

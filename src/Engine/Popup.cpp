@@ -9,13 +9,15 @@ Popup::Popup(WINDOW* stdscr,
              std::string title_,
              std::pair<std::pair<std::string,std::string>, std::pair<std::string,std::string>> choices_,
              std::string ask_text_,
-             bool view_text_)
+             bool view_text_,
+             bool sharp_edges_)
     : win(stdscr),
       size(size_),
       title(std::move(title_)),
       ask_text(std::move(ask_text_)),
       choices(std::move(choices_)),
-      view_text(view_text_)
+      view_text(view_text_),
+      sharp_edges(sharp_edges_)
 {
     // Si pas de choix -> on prépare un champ input
     if (choices.first.first.empty() && choices.second.first.empty()) {
@@ -63,7 +65,7 @@ void Popup::draw() {
     }
 
     // Cadre
-    Cadre cadre(win, {x1, y1}, {x2, y2});
+    Cadre cadre(win, {x1, y1}, {x2, y2}, sharp_edges);
     cadre.draw();
     cadre.sep(x1 + 2);
 

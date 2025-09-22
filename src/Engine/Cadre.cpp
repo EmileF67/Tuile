@@ -15,10 +15,11 @@ static std::string repeatUtf8(const std::string& s, int n) {
 
 // --------- Classe Cadre ---------
  // Affiche un cadre avec pour coordonnées x le coin haut gauche et y le coin bas droite.
-Cadre::Cadre(WINDOW* stdscr, std::pair<int,int> x_, std::pair<int,int> y_)
+Cadre::Cadre(WINDOW* stdscr, std::pair<int,int> x_, std::pair<int,int> y_, bool sharp_)
     : win(stdscr),
       x(x_), 
-      y(y_) 
+      y(y_),
+      sharp(sharp_)
 {}
 
 
@@ -36,8 +37,16 @@ void Cadre::draw() {
     int inner = c2 - c1 - 2; // nombre de '─' à dessiner entre les coins
     std::string horiz = repeatUtf8(u8"─", inner);
 
-    std::string top = std::string(u8"╭") + horiz + std::string(u8"╮");
-    std::string bot = std::string(u8"╰") + horiz + std::string(u8"╯");
+    std::string top;
+    std::string bot;
+
+    if (sharp) {
+        top = std::string(u8"┌") + horiz + std::string(u8"┐");
+        bot = std::string(u8"└") + horiz + std::string(u8"┘");
+    } else {
+        top = std::string(u8"╭") + horiz + std::string(u8"╮");
+        bot = std::string(u8"╰") + horiz + std::string(u8"╯");
+    }
 
     mvwaddstr(win, r1, c1, top.c_str());
     mvwaddstr(win, r2, c1, bot.c_str());
@@ -60,3 +69,8 @@ void Cadre::sep(int row) {
 }
 
 // ---------- Fin Classe Cadre ---------
+
+// Cadre sharp | Cadre arrondi
+// ┌─┐ ╭─╮
+// │ │ │ │
+// └─┘ ╰─╯
