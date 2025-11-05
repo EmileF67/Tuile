@@ -2,3 +2,4 @@ build/
 compiler.txt
 *.o
 *.exe
+*bak*
