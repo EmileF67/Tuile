@@ -36,7 +36,6 @@ FileManager::FileManager(WINDOW* stdscr, std::pair<int,int> x_, std::pair<int,in
 {
     // initialize members
     cwd = start_path;
-    cwd = "/home/emile";
     path_input = "";
     selected = 0;
     scroll_offset = 0;
@@ -281,15 +280,16 @@ void FileManager::draw() {
         wattron(win, COLOR_PAIR(color));
         mvwaddstr(win, x1 + 2 + static_cast<int>(i), y1, text.c_str());
         wattroff(win, COLOR_PAIR(color));
-
+        
         // Afficher taille de l'élément
         if (abs_idx == selected) {
             color = 4;
         } else {
             color = 5;
         }
-
+        wattron(win, COLOR_PAIR(color));
         mvwaddstr(win, x1 + 2 + static_cast<int>(i), y1 + cols - 10, rjust(size_str, 8).c_str());
+        wattroff(win, COLOR_PAIR(color));
     }
 
     // Si l'on est entrain de modifier le chemin manuellement

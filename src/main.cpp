@@ -199,15 +199,15 @@ int main(int argc, char** argv) {
         start_color();
         use_default_colors();
         init_pair(1, COLOR_BLUE, -1);     // dossier
-        init_pair(2, COLOR_WHITE, -1);    // fichier
-        init_pair(3, COLOR_BLACK, COLOR_CYAN); // dossier sélectionné
-        init_pair(4, COLOR_BLACK, COLOR_WHITE); // fichier sélectionné
-        init_pair(5, COLOR_YELLOW, -1);   // taille
+        init_pair(2, COLOR_GREEN, -1);    // fichier
+        init_pair(3, COLOR_CYAN, -1); // dossier sélectionné
+        init_pair(4, COLOR_YELLOW, -1); // fichier sélectionné
+        init_pair(5, COLOR_WHITE, -1);   // taille
     }
 
     bool sharp_edges = System::isLinuxConsole();
 
-    std::string start_path = ".";
+    std::string start_path = "/home/emile";
     if (argc > 1) start_path = argv[1];
 
     int rows = 0, cols = 0;
@@ -229,6 +229,7 @@ int main(int argc, char** argv) {
     };
 
     std::unique_ptr<FileManager> fm = make_fm(rows, cols);
+    fm->refresh_entries();
 
     bool running = true;
     while (running) {
