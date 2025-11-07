@@ -285,7 +285,7 @@ void FileManager::draw() {
         if (abs_idx == selected) {
             color = 4;
         } else {
-            color = 5;
+            color = 6;
         }
         wattron(win, COLOR_PAIR(color));
         mvwaddstr(win, x1 + 2 + static_cast<int>(i), y1 + cols - 10 - static_cast<int>(size_str.size()), size_str.c_str()); // TODO

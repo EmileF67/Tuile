@@ -204,6 +204,7 @@ int main(int argc, char** argv) {
         init_pair(3, COLOR_CYAN, -1); // dossier sélectionné
         init_pair(4, COLOR_YELLOW, -1); // fichier sélectionné
         init_pair(5, COLOR_WHITE, -1);   // taille
+        init_pair(6, 8, -1);   // taille
     }
 
     bool sharp_edges = System::isLinuxConsole();
@@ -235,26 +236,33 @@ int main(int argc, char** argv) {
     bool running = true;
     while (running) {
         // draw and refresh
-        clear();
+        // clear();
         mvprintw(0, 2, "FileManager test - Quit: q | Resize terminal to test resize");
         fm->draw();
         refresh();
 
         int ch = getch();
+
         if (ch == 'q' || ch == 'Q') {
             running = false;
             break;
         }
-
+        
+        // TODO : changer la taille d'affichage des variables de la classe directement.
+        // TODO : stocker les variables calculées si possible tant qu'on change pas de taille.
         if (ch == KEY_RESIZE) {
             getmaxyx(stdscr, rows, cols);
             // recreate FileManager to adapt to new size
             fm = make_fm(rows, cols);
             continue;
         }
-
-        // forward key to FileManager
-        fm->handle_key(ch);
+        
+        if (ch != ERR) {
+            // forward key to FileManager
+            fm->handle_key(ch);
+            fm->draw();
+            refresh();
+        }
     }
 
     endwin();

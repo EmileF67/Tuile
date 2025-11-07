@@ -48,6 +48,7 @@ void Cadre::draw() {
         bot = std::string(u8"╰") + horiz + std::string(u8"╯");
     }
 
+    wattron(win, COLOR_PAIR(6));
     mvwaddstr(win, r1, c1, top.c_str());
     mvwaddstr(win, r2, c1, bot.c_str());
 
@@ -56,6 +57,7 @@ void Cadre::draw() {
         mvwaddstr(win, r, c1, u8"│");
         mvwaddstr(win, r, c2 - 1, u8"│");
     }
+    wattroff(win, COLOR_PAIR(6));
 }
 
 // --- Méthode sep() ---
@@ -65,7 +67,9 @@ void Cadre::sep(int row) {
     int inner = y.second - x.second - 2;
     if (inner < 0) return;
     std::string line = std::string(u8"├") + repeatUtf8(u8"─", inner) + std::string(u8"┤");
+    wattron(win, COLOR_PAIR(6));
     mvwaddstr(win, row, x.second, line.c_str());
+    wattroff(win, COLOR_PAIR(6));
 }
 
 // ---------- Fin Classe Cadre ---------
