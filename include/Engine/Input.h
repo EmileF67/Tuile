@@ -17,8 +17,8 @@ class Input {
         int cursor_pos = 0;     // Position du curseur
 
     public:
-        // Constructeur
-        Input(WINDOW* stdscr, int x_, int y_, int length_, bool view_text_ = false);
+        Input(WINDOW* stdscr, int x_, int y_, int length_, bool view_text_ = false); // Constructeur
+        ~Input(); // Destructeur
 
         // Affiche l'input à l'écran
         void draw();

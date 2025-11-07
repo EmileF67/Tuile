@@ -193,7 +193,8 @@ int main(int argc, char** argv) {
     cbreak();
     noecho();
     keypad(stdscr, TRUE);
-    curs_set(1);
+    curs_set(0);
+    
 
     if (has_colors()) {
         start_color();
@@ -235,8 +236,8 @@ int main(int argc, char** argv) {
     while (running) {
         // draw and refresh
         clear();
-        fm->draw();
         mvprintw(0, 2, "FileManager test - Quit: q | Resize terminal to test resize");
+        fm->draw();
         refresh();
 
         int ch = getch();

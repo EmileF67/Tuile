@@ -288,7 +288,7 @@ void FileManager::draw() {
             color = 5;
         }
         wattron(win, COLOR_PAIR(color));
-        mvwaddstr(win, x1 + 2 + static_cast<int>(i), y1 + cols - 10, rjust(size_str, 8).c_str());
+        mvwaddstr(win, x1 + 2 + static_cast<int>(i), y1 + cols - 10 - static_cast<int>(size_str.size()), size_str.c_str()); // TODO
         wattroff(win, COLOR_PAIR(color));
     }
 

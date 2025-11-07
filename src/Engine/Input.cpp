@@ -14,7 +14,13 @@ static std::string repeatUtf8(const std::string& s, int n) {
 // --- Constructeur ---
 Input::Input(WINDOW* stdscr, int x_, int y_, int length_, bool view_text_)
     : win(stdscr), x(x_), y(y_), length(length_), view_text(view_text_)
-{}
+{
+    curs_set(1);
+}
+
+Input::~Input() {
+    curs_set(0);
+}
 
 // --- Dessine l'input ---
 void Input::draw() {
