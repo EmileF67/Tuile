@@ -268,9 +268,9 @@ void FileManager::draw() {
         if (abs_idx == selected) {
             prefix = "> ";
             if (fs::is_directory(full_path)) {
-                color = 3;
+                color = 3; // bleu
             } else {
-                color = 4;
+                color = 4; // vert
             }
         } else {
             prefix = "  ";
@@ -283,9 +283,9 @@ void FileManager::draw() {
         
         // Afficher taille de l'élément
         if (abs_idx == selected) {
-            color = 4;
+            color = 4; // jaune
         } else {
-            color = 6;
+            color = 6; // gris
         }
         wattron(win, COLOR_PAIR(color));
         mvwaddstr(win, x1 + 2 + static_cast<int>(i), y1 + cols - 10 - static_cast<int>(size_str.size()), size_str.c_str()); // TODO
@@ -557,11 +557,9 @@ void FileManager::handle_key(int key) {
 
                 if (nouveau == 0) {             // Fichier
                     using Choice = std::pair<std::string, std::string>;
-                    using Choices = std::pair<Choice, Choice>;
                     popup = std::make_unique<Popup>(win, std::make_pair(9, 40), "Nouveau fichier ", std::make_pair(Choice{}, Choice{}), "Nom :", true, sharp_edges);
                 } else if (nouveau == 1) {      // Dossier
                     using Choice = std::pair<std::string, std::string>;
-                    using Choices = std::pair<Choice, Choice>;
                     popup = std::make_unique<Popup>(win, std::make_pair(9, 40), "Nouveau dossier ", std::make_pair(Choice{}, Choice{}), "Nom :", true, sharp_edges);
                 }
 
