@@ -1,6 +1,8 @@
+Bien sûr ! Voici une version complète et améliorée de ton README.md, prête à copier-coller :
+
 # T.U.I.L.E
 
-Who stands for
+Which stands for:
 
 - **T**ext-based
 - **U**ser
@@ -8,8 +10,70 @@ Who stands for
 - **L**ayout
 - **E**ngine
 
-Is a project who consist of :
+T.U.I.L.E is a project that aims to:
 
-1. Making life easier for peoples who struggle to only use the terminal in linux.
-2. Get a simple User Interface in a ssh terminal.
-3. Be lightly as possible so you can use it as a substitute of any graphical user inteface.
+1. Make life easier for people who mainly use the Linux terminal.
+2. Provide a simple User Interface in an SSH terminal.
+3. Be lightweight enough to be used as a substitute for any graphical user interface.
+
+---
+
+# Installation
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/EmileF67/Tuile.git
+cd Tuile
+````
+
+### 2. Install dependencies
+
+The main library used in this project is **ncurses**.
+
+* **Debian / Ubuntu**:
+
+```bash
+sudo apt update && apt upgrade
+sudo apt install libncurses-dev
+```
+
+* **Arch-based systems**:
+
+```bash
+sudo pacman -Syu
+sudo pacman -S ncurses
+```
+
+### 3. Create the build directory
+
+```bash
+mkdir -p build
+```
+
+### 4. Compile the project
+
+```bash
+make
+```
+
+The compiled executable will be located at `Tuile/build/main`.
+
+---
+
+# Running T.U.I.L.E
+
+```bash
+./build/main
+```
+
+Enjoy your text-based UI in the terminal!
+
+---
+
+# Notes
+
+* Make sure your terminal supports **UTF-8** and uses a **Unicode-compatible font** (like DejaVu Sans Mono, Fira Code, or Nerd Fonts) to properly display box drawing characters and icons.
+* The project is designed for **Linux terminals** and may not work correctly on Windows without WSL or a compatible terminal emulator.
+
+---
