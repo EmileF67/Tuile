@@ -43,6 +43,7 @@ class FileManager {
         std::string path_to_copy;
         std::string editor;
         std::unique_ptr<Popup> popup;
+        bool cursor_on;
 
     public:
     FileManager(WINDOW* stdscr, std::pair<int,int> x_, std::pair<int,int> y_, const std::string& start_path_, bool display_size_, bool display_dotfiles_, bool sharp_edges_);

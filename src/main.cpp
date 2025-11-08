@@ -251,9 +251,11 @@ int main(int argc, char** argv) {
         // TODO : changer la taille d'affichage des variables de la classe directement.
         // TODO : stocker les variables calculées si possible tant qu'on change pas de taille.
         if (ch == KEY_RESIZE) {
+            clear();
             getmaxyx(stdscr, rows, cols);
             // recreate FileManager to adapt to new size
             fm = make_fm(rows, cols);
+            fm->refresh_entries();
             continue;
         }
         

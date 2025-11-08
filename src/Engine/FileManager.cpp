@@ -52,6 +52,7 @@ FileManager::FileManager(WINDOW* stdscr, std::pair<int,int> x_, std::pair<int,in
     path_to_copy = "";
     editor = "vim";
     popup.reset();
+    cursor_on = false;
 }
 
 std::string rjust(const std::string& str, size_t width, char fill = ' ') {
@@ -236,7 +237,7 @@ void FileManager::draw() {
 
     // Afficher les entrées
     size_t start = static_cast<size_t>(scroll_offset);
-    size_t end = std::min(entries.size(), start + static_cast<size_t>(rows));
+    size_t end = std::min(entries.size(), start + static_cast<size_t>(x2-x1 - 1));
     std::vector<std::string> visible_entries(entries.begin() + start, entries.begin() + end);
 
     for (std::size_t i = 0; i < visible_entries.size(); i++) {
@@ -365,6 +366,16 @@ void FileManager::draw() {
 void FileManager::handle_key(int key) {
     int rows, cols;
     getmaxyx(win, rows, cols);
+    // Compute the number of visible rows inside this FileManager window
+    // The draw() function uses (x2 - x1 - 1) as the number of visible entries,
+    // so keep the same value here to keep scrolling logic consistent.
+    int x1 = x.first;
+    int x2 = y.first;
+    int view_rows = x2 - x1 - 1;
+    if (view_rows <= 0) {
+        // Fallback to terminal rows if the computed area is invalid
+        view_rows = rows;
+    }
     const int MINCHAR = 32;
     const int MAXCHAR = 126;
 
@@ -406,10 +417,10 @@ void FileManager::handle_key(int key) {
             selected = std::min(static_cast<int>(entries.size()) - 1, selected + 1);
 
             // Si on est trop proche du bas de la fenêtre visible
-            if (selected >= scroll_offset + rows - scroll_margin) {
+            if (selected >= scroll_offset + view_rows - scroll_margin) {
                 scroll_offset = std::min(
-                    std::max(0, static_cast<int>(entries.size()) - rows),
-                    selected - rows + scroll_margin + 1
+                    std::max(0, static_cast<int>(entries.size()) - view_rows),
+                    selected - view_rows + scroll_margin + 1
                 );
             }
         }
@@ -423,6 +434,13 @@ void FileManager::handle_key(int key) {
         // --- Touche Slash ---
         else if (key == static_cast<int>('/')) {
             editing_path = !editing_path;
+            if (editing_path && !cursor_on) {
+                curs_set(1);
+                cursor_on = true;
+            } else {
+                curs_set(0);
+                cursor_on = false;
+            }
             if (editing_path) {
                 path_input = "";
             }
@@ -477,16 +495,16 @@ void FileManager::handle_key(int key) {
 
         // --- Touche Page Down ---
         if (key == KEY_NPAGE) {
-            selected = std::min(static_cast<int>(entries.size()) - 1, selected + rows);
+            selected = std::min(static_cast<int>(entries.size()) - 1, selected + view_rows);
             scroll_offset = std::min(
-                std::max(0, static_cast<int>(entries.size()) - rows),
-                selected - rows + 1
+                std::max(0, static_cast<int>(entries.size()) - view_rows),
+                selected - view_rows + 1
             );
         }
 
         // --- Touche Page Up ---
         else if (key == KEY_PPAGE) {
-            selected = std::max(0, selected - rows);
+            selected = std::max(0, selected - view_rows);
             scroll_offset = std::max(0, selected);
         }
 
@@ -499,7 +517,7 @@ void FileManager::handle_key(int key) {
         // --- Touche Fin ---
         else if (key == KEY_END) {
             selected = static_cast<int>(entries.size()) - 1;
-            scroll_offset = std::max(0, static_cast<int>(entries.size()) - rows);
+            scroll_offset = std::max(0, static_cast<int>(entries.size()) - view_rows);
         }
 
         // --- Touche n ---
