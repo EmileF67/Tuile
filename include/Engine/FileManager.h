@@ -19,7 +19,7 @@ class FileManager {
         std::string start_path;
         bool display_size;
         bool display_dotfiles;
-        bool sharp_edges;
+        bool is_linux_console;
 
         // State
         bool editing_path;
@@ -46,20 +46,20 @@ class FileManager {
         bool cursor_on;
 
     public:
-    FileManager(WINDOW* stdscr, std::pair<int,int> x_, std::pair<int,int> y_, const std::string& start_path_, bool display_size_, bool display_dotfiles_, bool sharp_edges_);
+    FileManager(WINDOW* stdscr, std::pair<int,int> x_, std::pair<int,int> y_, const std::string& start_path_, bool display_size_, bool display_dotfiles_, bool is_linux_console_);
     ~FileManager();
 
         // Affiche l'application
         void draw();
 
         //Gère la navigation clavier
-    void handle_key(int key);
+        void handle_key(int key);
 
         // Retourne un nombre de bits sous format plus lisible par l'entier (Donc Mo, Go, etc.....)
-    std::string human_readable_size(long long size);
+        std::string human_readable_size(long long size);
 
         // Tri alphabétique d'abord des dossiers, puis fichiers
-    std::vector<std::string> tri_dossiers_fichiers(const std::vector<std::string>& lst);
+        std::vector<std::string> tri_dossiers_fichiers(const std::vector<std::string>& lst);
 
         // Génération de la liste des entrée du cwd
         void refresh_entries();

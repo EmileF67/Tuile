@@ -25,14 +25,14 @@ namespace fs = std::filesystem;
 FileManager::~FileManager() = default;
 
 // --- Constructeur ---
-FileManager::FileManager(WINDOW* stdscr, std::pair<int,int> x_, std::pair<int,int> y_, const std::string& start_path_, bool display_size_, bool display_dotfiles_, bool sharp_edges_)
+FileManager::FileManager(WINDOW* stdscr, std::pair<int,int> x_, std::pair<int,int> y_, const std::string& start_path_, bool display_size_, bool display_dotfiles_, bool is_linux_console_)
     : win(stdscr),
       x(x_),
       y(y_),
       start_path(start_path_),
       display_size(display_size_),
       display_dotfiles(display_dotfiles_),
-      sharp_edges(sharp_edges_)
+      is_linux_console(is_linux_console_)
 {
     // initialize members
     cwd = start_path;
@@ -218,7 +218,7 @@ void FileManager::draw() {
     }
 
     // Cadre
-    Cadre cadre(win, {x1 - 1, y1 - 1}, {x2 + 1, y2 + 1}, sharp_edges);
+    Cadre cadre(win, {x1 - 1, y1 - 1}, {x2 + 1, y2 + 1}, is_linux_console);
     cadre.draw();
     cadre.sep(x1 + 1);
 
@@ -286,7 +286,11 @@ void FileManager::draw() {
         if (abs_idx == selected) {
             color = 4; // jaune
         } else {
-            color = 6; // gris
+            if (is_linux_console) {
+                color = 5; // gris
+            } else {
+                color = 6; // bland
+            }
         }
         wattron(win, COLOR_PAIR(color));
         mvwaddstr(win, x1 + 2 + static_cast<int>(i), y1 + cols - 10 - static_cast<int>(size_str.size()), size_str.c_str()); // TODO
@@ -304,7 +308,7 @@ void FileManager::draw() {
             using Choice = std::pair<std::string, std::string>;
             using Choices = std::pair<Choice, Choice>;
             Choices choix = {{"Fichier", ""}, {"Dossier", ""}};
-            popup = std::make_unique<Popup>(win, std::make_pair(9, 40), "Nouveau", choix, "", true, sharp_edges);
+            popup = std::make_unique<Popup>(win, std::make_pair(9, 40), "Nouveau", choix, "", true, is_linux_console);
         }
 
         popup->draw();
@@ -327,7 +331,7 @@ void FileManager::draw() {
             using Choice = std::pair<std::string, std::string>;
             using Choices = std::pair<Choice, Choice>;
             Choices choix = {{"Oui", ""}, {"Non", ""}};
-            popup = std::make_unique<Popup>(win, std::make_pair(9, 90), label, choix, "", true, sharp_edges);
+            popup = std::make_unique<Popup>(win, std::make_pair(9, 90), label, choix, "", true, is_linux_console);
             // default selected to 1 (second option)
         }
         if (popup) popup->draw();
@@ -337,7 +341,7 @@ void FileManager::draw() {
     if (rename_element) {
         if (!popup) {
             std::string label = "Renommer " + entries[selected];
-            popup = std::make_unique<Popup>(win, std::make_pair(9, 50), label, std::make_pair(std::make_pair(std::string(), std::string()), std::make_pair(std::string(), std::string())), "Nouveau nom :", true, sharp_edges);
+            popup = std::make_unique<Popup>(win, std::make_pair(9, 50), label, std::make_pair(std::make_pair(std::string(), std::string()), std::make_pair(std::string(), std::string())), "Nouveau nom :", true, is_linux_console);
         }
         if (popup) popup->draw();
     }
@@ -354,7 +358,7 @@ void FileManager::draw() {
             using Choice = std::pair<std::string, std::string>;
             using Choices = std::pair<Choice, Choice>;
             Choices choix = {{"Oui", ""}, {"Non", ""}};
-            popup = std::make_unique<Popup>(win, std::make_pair(9, 90), label, choix, "", true, sharp_edges);
+            popup = std::make_unique<Popup>(win, std::make_pair(9, 90), label, choix, "", true, is_linux_console);
         }
         if (popup) popup->draw();
     }
@@ -384,11 +388,11 @@ void FileManager::handle_key(int key) {
     if (editing_path) {
         if (key == KEY_BACKSPACE || key == 127) {
             if (!path_input.empty()) path_input = path_input.substr(0, path_input.size() - 1);
-            selected = 0;
+            selected = 1;
             scroll_offset = 0;
         } else if (MINCHAR <= key && key <= MAXCHAR) {
             path_input += static_cast<char>(key);
-            selected = 0;
+            selected = 1;
             scroll_offset = 0;
         }
 
@@ -575,10 +579,10 @@ void FileManager::handle_key(int key) {
 
                 if (nouveau == 0) {             // Fichier
                     using Choice = std::pair<std::string, std::string>;
-                    popup = std::make_unique<Popup>(win, std::make_pair(9, 40), "Nouveau fichier ", std::make_pair(Choice{}, Choice{}), "Nom :", true, sharp_edges);
+                    popup = std::make_unique<Popup>(win, std::make_pair(9, 40), "Nouveau fichier ", std::make_pair(Choice{}, Choice{}), "Nom :", true, is_linux_console);
                 } else if (nouveau == 1) {      // Dossier
                     using Choice = std::pair<std::string, std::string>;
-                    popup = std::make_unique<Popup>(win, std::make_pair(9, 40), "Nouveau dossier ", std::make_pair(Choice{}, Choice{}), "Nom :", true, sharp_edges);
+                    popup = std::make_unique<Popup>(win, std::make_pair(9, 40), "Nouveau dossier ", std::make_pair(Choice{}, Choice{}), "Nom :", true, is_linux_console);
                 }
 
                 input_new = false;

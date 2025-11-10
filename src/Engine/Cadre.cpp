@@ -15,12 +15,18 @@ static std::string repeatUtf8(const std::string& s, int n) {
 
 // --------- Classe Cadre ---------
  // Affiche un cadre avec pour coordonnées x le coin haut gauche et y le coin bas droite.
-Cadre::Cadre(WINDOW* stdscr, std::pair<int,int> x_, std::pair<int,int> y_, bool sharp_)
+Cadre::Cadre(WINDOW* stdscr, std::pair<int,int> x_, std::pair<int,int> y_, bool is_linux_console_)
     : win(stdscr),
       x(x_), 
       y(y_),
-      sharp(sharp_)
-{}
+      is_linux_console(is_linux_console_)
+{
+    if (is_linux_console) {
+        color = 5;
+    } else {
+        color = 6;
+    }
+}
 
 
 // --- Méthode draw() ---
@@ -40,7 +46,7 @@ void Cadre::draw() {
     std::string top;
     std::string bot;
 
-    if (sharp) {
+    if (is_linux_console) {
         top = std::string(u8"┌") + horiz + std::string(u8"┐");
         bot = std::string(u8"└") + horiz + std::string(u8"┘");
     } else {
@@ -48,7 +54,7 @@ void Cadre::draw() {
         bot = std::string(u8"╰") + horiz + std::string(u8"╯");
     }
 
-    wattron(win, COLOR_PAIR(6));
+    wattron(win, COLOR_PAIR(color));
     mvwaddstr(win, r1, c1, top.c_str());
     mvwaddstr(win, r2, c1, bot.c_str());
 
@@ -57,7 +63,7 @@ void Cadre::draw() {
         mvwaddstr(win, r, c1, u8"│");
         mvwaddstr(win, r, c2 - 1, u8"│");
     }
-    wattroff(win, COLOR_PAIR(6));
+    wattroff(win, COLOR_PAIR(color));
 }
 
 // --- Méthode sep() ---
@@ -67,9 +73,9 @@ void Cadre::sep(int row) {
     int inner = y.second - x.second - 2;
     if (inner < 0) return;
     std::string line = std::string(u8"├") + repeatUtf8(u8"─", inner) + std::string(u8"┤");
-    wattron(win, COLOR_PAIR(6));
+    wattron(win, COLOR_PAIR(color));
     mvwaddstr(win, row, x.second, line.c_str());
-    wattroff(win, COLOR_PAIR(6));
+    wattroff(win, COLOR_PAIR(color));
 }
 
 // ---------- Fin Classe Cadre ---------

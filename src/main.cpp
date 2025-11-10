@@ -196,18 +196,25 @@ int main(int argc, char** argv) {
     curs_set(0);
     
 
+    bool is_linux_console = System::isLinuxConsole();
+
     if (has_colors()) {
         start_color();
         use_default_colors();
+
         init_pair(1, COLOR_BLUE, -1);     // dossier
         init_pair(2, COLOR_GREEN, -1);    // fichier
         init_pair(3, COLOR_CYAN, -1); // dossier sélectionné
         init_pair(4, COLOR_YELLOW, -1); // fichier sélectionné
         init_pair(5, COLOR_WHITE, -1);   // taille
-        init_pair(6, 8, -1);   // taille
+        init_pair(6, 8, -1);   // taille && cadre (gris)
+        // if (is_linux_console) {
+        //     init_pair(6, 8, -1);   // taille && cadre (gris)
+        // } else {
+        //     init_pair(5, COLOR_WHITE, -1);   // taille
+        // }
     }
 
-    bool sharp_edges = System::isLinuxConsole();
 
     std::string start_path = "/home/emile";
     if (argc > 1) start_path = argv[1];
@@ -226,7 +233,7 @@ int main(int argc, char** argv) {
             start_path,
             true,   // display sizes
             false,  // hide dotfiles by default
-            sharp_edges
+            is_linux_console
         );
     };
 
