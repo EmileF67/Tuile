@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <iostream>
 #include <fstream>
+#include <set>
 
 #include "Engine/Cadre.h"
 #include "Engine/Popup.h"
@@ -53,7 +54,27 @@ FileManager::FileManager(WINDOW* stdscr, std::pair<int,int> x_, std::pair<int,in
     editor = "vim";
     popup.reset();
     cursor_on = false;
+    aSpace = false;
+    display_icons = true;
 }
+
+bool is_image_file(const std::string& filename) {
+    static const std::set<std::string> image_exts = {
+        "bmp","dib","jpg","jpeg","jpe","png","gif",
+        "tif","tiff","webp","heif","heic","ico","cur",
+        "svg","svgz","psd","cr2","nef","arw","dng","rw2"
+    };
+
+    std::string ext;
+    size_t pos = filename.find_last_of('.');
+    if (pos == std::string::npos) return false;
+
+    ext = filename.substr(pos + 1);
+    std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+
+    return image_exts.count(ext) > 0;
+}
+
 
 std::string rjust(const std::string& str, size_t width, char fill = ' ') {
     if (str.size() >= width)
@@ -247,21 +268,51 @@ void FileManager::draw() {
         fs::path full_path = fs::path(cwd) / entry;
 
         int color = 5;
+        int colorL = 5;
         std::string icon;
 
         if (fs::is_directory(full_path)) {
             color = 1;
-            icon = " ";
+            colorL = 7;
+            if (is_linux_console || !display_icons) {
+                icon = "  ";
+            } else {
+                // icon = " ";
+                // icon = "📁 ";
+                icon = "🖿  ";
+            }
             size_str = "";
         } else {
-            color = 2;
-            icon = " ";
-
+            // Essayer d'obtenir la taille de l'élément.
+            long long temp_size;
             try {
                 auto sz = std::filesystem::file_size(full_path);
-                size_str = human_readable_size(static_cast<long long>(sz));
+                temp_size = static_cast<long long>(sz);
+                size_str = human_readable_size(temp_size);
             } catch (const std::filesystem::filesystem_error&) {
                 size_str = "?";
+            }
+
+            // Identification exacte de l'élément
+            color = 2;
+            colorL = 8;
+            if (is_linux_console || !display_icons) {
+                icon = "  ";
+            } else {
+                std::string ext = std::filesystem::path(entry).extension().string();
+                if (temp_size == 0) {
+                    icon = "🗋 ";
+                } else if (is_image_file(entry)) {
+                    icon = "🖻 ";
+                } else {
+                    icon = "🗎 ";
+                }
+
+                if (aSpace) {
+                    icon = icon + " ";
+                }
+                // icon = " ";
+                // icon = "📄 ";
             }
         }
 
@@ -270,8 +321,10 @@ void FileManager::draw() {
             prefix = "> ";
             if (fs::is_directory(full_path)) {
                 color = 3; // bleu
+                colorL = 9;
             } else {
                 color = 4; // vert
+                colorL = 10;
             }
         } else {
             prefix = "  ";
@@ -289,12 +342,24 @@ void FileManager::draw() {
             if (is_linux_console) {
                 color = 5; // gris
             } else {
-                color = 6; // bland
+                color = 6; // blanc
             }
         }
         wattron(win, COLOR_PAIR(color));
         mvwaddstr(win, x1 + 2 + static_cast<int>(i), y1 + cols - 10 - static_cast<int>(size_str.size()), size_str.c_str()); // TODO
         wattroff(win, COLOR_PAIR(color));
+
+        std::string iconasc;
+        if (is_linux_console || !display_icons) {
+            if (colorL == 7 || colorL == 9) {
+                iconasc = "D";
+            } else {
+                iconasc = "F";
+            }
+            wattron(win, COLOR_PAIR(colorL));
+            mvwaddstr(win, x1 + 2 + static_cast<int>(i), y1 + 2, iconasc.c_str());
+            wattroff(win, COLOR_PAIR(colorL));
+        }
     }
 
     // Si l'on est entrain de modifier le chemin manuellement
@@ -384,6 +449,11 @@ void FileManager::handle_key(int key) {
     const int MAXCHAR = 126;
 
     int scroll_margin = 3;
+
+    if (key == KEY_F(2)) {
+        display_icons = !display_icons;
+        refresh_entries();
+    }
 
     if (editing_path) {
         if (key == KEY_BACKSPACE || key == 127) {

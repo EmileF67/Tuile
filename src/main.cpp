@@ -208,6 +208,10 @@ int main(int argc, char** argv) {
         init_pair(4, COLOR_YELLOW, -1); // fichier sélectionné
         init_pair(5, COLOR_WHITE, -1);   // taille
         init_pair(6, 8, -1);   // taille && cadre (gris)
+        init_pair(7, COLOR_BLACK, COLOR_BLUE);
+        init_pair(8, COLOR_BLACK, COLOR_GREEN);
+        init_pair(9, COLOR_BLACK, COLOR_CYAN);
+        init_pair(10, COLOR_BLACK, COLOR_YELLOW);
         // if (is_linux_console) {
         //     init_pair(6, 8, -1);   // taille && cadre (gris)
         // } else {
