@@ -99,6 +99,31 @@ std::string FileManager::human_readable_size(long long size) {
     return std::string(buf);
 }
 
+static bool naturalCompare(const std::string& a, const std::string& b) {
+    size_t i = 0, j = 0;
+
+    while (i < a.size() && j < b.size()) {
+        if (std::isdigit(a[i]) && std::isdigit(b[j])) {
+            // Lire les nombres
+            size_t i_start = i;
+            while (i < a.size() && std::isdigit(a[i])) ++i;
+            size_t j_start = j;
+            while (j < b.size() && std::isdigit(b[j])) ++j;
+
+            int numA = std::stoi(a.substr(i_start, i - i_start));
+            int numB = std::stoi(b.substr(j_start, j - j_start));
+
+            if (numA != numB)
+                return numA < numB;
+        } else {
+            if (a[i] != b[j])
+                return a[i] < b[j];
+            ++i;
+            ++j;
+        }
+    }
+    return a.size() < b.size();
+}
 
 std::vector<std::string> FileManager::tri_dossiers_fichiers(const std::vector<std::string>& lst) {
     std::vector<std::string> lstdir;
@@ -106,17 +131,20 @@ std::vector<std::string> FileManager::tri_dossiers_fichiers(const std::vector<st
 
     for (const auto& e : lst) {
         fs::path p = fs::path(cwd) / e;
-        if (fs::is_directory(p)) {
+        std::error_code ec;
+        bool is_dir = fs::is_directory(p, ec);
+        if (ec) {
+            lstfile.push_back(e);
+        } else if (is_dir) {
             lstdir.push_back(e);
         } else {
             lstfile.push_back(e);
         }
     }
 
-    std::sort(lstdir.begin(), lstdir.end());
-    std::sort(lstfile.begin(), lstfile.end());
+    std::sort(lstdir.begin(), lstdir.end(), naturalCompare);
+    std::sort(lstfile.begin(), lstfile.end(), naturalCompare);
 
-    // Concaténer les deux vecteurs
     std::vector<std::string> result;
     result.reserve(lstdir.size() + lstfile.size());
     result.insert(result.end(), lstdir.begin(), lstdir.end());
@@ -180,7 +208,7 @@ void FileManager::refresh_entries() {
         // sending new entries from <temp> to <entries>
     entries = temp;
 
-
+    // const fs::filesystem_error& e
     } catch (const fs::filesystem_error& e) {
         entries.clear();
         entries.push_back("..");
@@ -271,20 +299,35 @@ void FileManager::draw() {
         int colorL = 5;
         std::string icon;
 
-        if (fs::is_directory(full_path)) {
+        // Use the non-throwing overload to detect directory status. If we
+        // can't stat the entry (permission denied), we display it but mark
+        // its size as unknown.
+        std::error_code ec;
+        bool is_dir = fs::is_directory(full_path, ec);
+
+        if (ec) {
+            // Permission or other error while querying the entry. Show a
+            // neutral icon and unknown size.
+            color = 5;
+            colorL = 5;
+            if (is_linux_console || !display_icons) {
+                icon = "  ";
+            } else {
+                icon = "? ";
+            }
+            size_str = "?";
+        } else if (is_dir) {
             color = 1;
             colorL = 7;
             if (is_linux_console || !display_icons) {
                 icon = "  ";
             } else {
-                // icon = " ";
-                // icon = "📁 ";
                 icon = "🖿  ";
             }
             size_str = "";
         } else {
             // Essayer d'obtenir la taille de l'élément.
-            long long temp_size;
+            long long temp_size = 0;
             try {
                 auto sz = std::filesystem::file_size(full_path);
                 temp_size = static_cast<long long>(sz);
@@ -311,16 +354,14 @@ void FileManager::draw() {
                 if (aSpace) {
                     icon = icon + " ";
                 }
-                // icon = " ";
-                // icon = "📄 ";
             }
         }
 
         std::string prefix;
         if (abs_idx == selected) {
             prefix = "> ";
-            if (fs::is_directory(full_path)) {
-                color = 3; // bleu
+            if (ec || is_dir) {
+                color = 3; // bleu-ish for directory or error
                 colorL = 9;
             } else {
                 color = 4; // vert
@@ -542,22 +583,53 @@ void FileManager::handle_key(int key) {
                     } else if (selected < scroll_offset) {
                         scroll_offset = selected;
                     }
-                } else if (fs::is_directory(new_path)) {
-                    cwd = new_path.string();
-                    selected = 0;
-                    scroll_offset = 0;
-                } else { // Si c'est un fichier
-                    if (editor == "vim") {
-                        endwin();
-                        std::string cmd = "vim \"" + new_path.string() + "\"";
-                        system(cmd.c_str());
-                        wrefresh(win);
-                        doupdate();
-                    } else if (editor == "vscode") {
-                        std::string cmd = "code \"" + new_path.string() + "\"";
-                        system(cmd.c_str());
+
+                } else {
+                    // Try to detect if target is a directory. fs::is_directory
+                    // can throw (e.g. permission denied). Protect the UI from
+                    // exceptions and show a permission error instead.
+                    try {
+                        if (fs::is_directory(new_path)) {
+                            cwd = new_path.string();
+                            selected = 0;
+                            scroll_offset = 0;
+                        } else { // Si c'est un fichier
+                            if (editor == "vim") {
+                                endwin();
+                                std::string cmd = "vim \"" + new_path.string() + "\"";
+                                system(cmd.c_str());
+                                wrefresh(win);
+                                doupdate();
+                            } else if (editor == "vscode") {
+                                std::string cmd = "code \"" + new_path.string() + "\"";
+                                system(cmd.c_str());
+                            }
+                        }
+                    } catch (const fs::filesystem_error& e) {
+                        std::cerr << "handle_key: cannot open directory '" << new_path.string() << "': " << e.what() << std::endl;
+                        entries.clear();
+                        entries.push_back("..");
+                        entries.push_back("PERMISSION ERROR");
+                        selected = 0;
+                        scroll_offset = 0;
                     }
                 }
+                // } else if (fs::is_directory(new_path)) {
+                //     cwd = new_path.string();
+                //     selected = 0;
+                //     scroll_offset = 0;
+                // } else { // Si c'est un fichier
+                //     if (editor == "vim") {
+                //         endwin();
+                //         std::string cmd = "vim \"" + new_path.string() + "\"";
+                //         system(cmd.c_str());
+                //         wrefresh(win);
+                //         doupdate();
+                //     } else if (editor == "vscode") {
+                //         std::string cmd = "code \"" + new_path.string() + "\"";
+                //         system(cmd.c_str());
+                //     }
+                // }
             }
 
             if (editing_path) {
