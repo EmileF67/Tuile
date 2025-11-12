@@ -46,6 +46,7 @@ class FileManager {
         bool cursor_on;
         bool aSpace;
         bool display_icons;
+        bool display_perms;
 
     public:
     FileManager(WINDOW* stdscr, std::pair<int,int> x_, std::pair<int,int> y_, const std::string& start_path_, bool display_size_, bool display_dotfiles_, bool is_linux_console_);

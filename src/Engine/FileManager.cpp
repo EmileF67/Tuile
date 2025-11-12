@@ -54,8 +54,9 @@ FileManager::FileManager(WINDOW* stdscr, std::pair<int,int> x_, std::pair<int,in
     editor = "vim";
     popup.reset();
     cursor_on = false;
-    aSpace = false;
+    aSpace = true;
     display_icons = true;
+    display_perms = false;
 }
 
 bool is_image_file(const std::string& filename) {
@@ -249,6 +250,40 @@ void FileManager::copy_to_path() {
 }
 
 
+std::string obtenir_permissions(const fs::path& p) {
+    std::error_code ec;
+    fs::file_status status = fs::status(p, ec);
+
+    if (ec) {
+        std::cerr << "Erreur : " << ec.message() << '\n';
+        return std::string("");
+    }
+
+    fs::perms perm = status.permissions();
+
+    auto check = [&](fs::perms bit) -> bool {
+        return (perm & bit) != fs::perms::none;
+    };
+
+
+    std::string tempperm;
+    tempperm += (check(fs::perms::owner_read)   ? 'r' : '-');
+    tempperm += (check(fs::perms::owner_write)  ? 'w' : '-');
+    tempperm += (check(fs::perms::owner_exec)   ? 'x' : '-');
+    tempperm += " ";
+    tempperm += (check(fs::perms::group_read)   ? 'r' : '-');
+    tempperm += (check(fs::perms::group_write)  ? 'w' : '-');
+    tempperm += (check(fs::perms::group_exec)   ? 'x' : '-');
+    tempperm += " ";
+    tempperm += (check(fs::perms::others_read)  ? 'r' : '-');
+    tempperm += (check(fs::perms::others_write) ? 'w' : '-');
+    tempperm += (check(fs::perms::others_exec)  ? 'x' : '-');
+    tempperm += " ";
+
+    return tempperm;
+}
+
+
 void FileManager::draw() {
     int rows, cols;
     getmaxyx(win, rows, cols);
@@ -371,7 +406,17 @@ void FileManager::draw() {
             prefix = "  ";
         }
 
-        std::string text = prefix + icon + entry;
+
+        // Obtenir les permissions de l'élément
+        std::string permissions;
+        if (!ec && display_perms) {
+            permissions = obtenir_permissions(full_path);
+        } else {
+            permissions = "";
+        }
+
+
+        std::string text = prefix + permissions + icon + entry;
         wattron(win, COLOR_PAIR(color));
         mvwaddstr(win, x1 + 2 + static_cast<int>(i), y1, text.c_str());
         wattroff(win, COLOR_PAIR(color));
@@ -397,8 +442,16 @@ void FileManager::draw() {
             } else {
                 iconasc = "F";
             }
+
+            int enPlus;
+            if (display_perms) {
+                enPlus = 12;
+            } else {
+                enPlus = 0;
+            }
+
             wattron(win, COLOR_PAIR(colorL));
-            mvwaddstr(win, x1 + 2 + static_cast<int>(i), y1 + 2, iconasc.c_str());
+            mvwaddstr(win, x1 + 2 + static_cast<int>(i), y1 + 2 + enPlus, iconasc.c_str());
             wattroff(win, COLOR_PAIR(colorL));
         }
     }
@@ -493,6 +546,11 @@ void FileManager::handle_key(int key) {
 
     if (key == KEY_F(2)) {
         display_icons = !display_icons;
+        refresh_entries();
+    }
+
+    if (key == KEY_F(3)) {
+        display_perms = !display_perms;
         refresh_entries();
     }
 
