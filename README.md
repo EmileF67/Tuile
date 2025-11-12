@@ -23,7 +23,7 @@ T.U.I.L.E is a project that aims to:
 ```bash
 git clone https://github.com/EmileF67/Tuile.git
 cd Tuile
-````
+```
 
 ### 2. Install dependencies
 
@@ -43,13 +43,31 @@ sudo pacman -Syu
 sudo pacman -S ncurses
 ```
 
-### 3. Create the build directory
+### 3. Install icons
+
+The icons used in this project are from the Noto Color Font Emoji
+
+* **Debian / Ubuntu**:
+
+```bash
+sudo apt install fonts-noto-color-emoji
+```
+
+* **Arch-based systems**:
+
+```bash
+sudo pacman -S noto-fonts-emoji
+```
+
+
+
+### 4. Create the build directory
 
 ```bash
 mkdir -p build
 ```
 
-### 4. Compile the project
+### 5. Compile the project
 
 ```bash
 make
@@ -71,7 +89,6 @@ Enjoy your text-based UI in the terminal!
 
 # Notes
 
-* Make sure your terminal supports **UTF-8** and uses a **Unicode-compatible font** (like DejaVu Sans Mono, Fira Code, or Nerd Fonts) to properly display box drawing characters and icons.
 * The project is designed for **Linux terminals** and may not work correctly on Windows without WSL or a compatible terminal emulator.
 
 ---
