@@ -1,5 +1,3 @@
-Bien sûr ! Voici une version complète et améliorée de ton README.md, prête à copier-coller :
-
 # T.U.I.L.E
 
 Which stands for:

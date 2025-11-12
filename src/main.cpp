@@ -220,7 +220,7 @@ int main(int argc, char** argv) {
     }
 
 
-    std::string start_path = "/home/emile";
+    std::string start_path = std::filesystem::current_path().string();
     if (argc > 1) start_path = argv[1];
 
     int rows = 0, cols = 0;
