@@ -70,6 +70,9 @@ class FileManager {
         // Copie un élément d'un endroit vers un autre (récursif)
         void copy_to_path();
 
+        // Obtenir le cwd
+        std::string get_cwd() { return cwd; };
+
 };
 
 

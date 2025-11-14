@@ -227,21 +227,21 @@ int main(int argc, char** argv) {
     getmaxyx(stdscr, rows, cols);
 
     // Create FileManager with safe margins; we'll recreate it on resize.
-    auto make_fm = [&](int r, int c) {
+    auto make_fm = [&](int r, int c, std::string spath) {
         std::pair<int,int> topLeft {2, 4};
         std::pair<int,int> botRight {std::max(10, r - 3), std::max(20, c - 4)};
         return std::make_unique<FileManager>(
             stdscr,
             topLeft,
             botRight,
-            start_path,
+            spath,
             true,   // display sizes
             false,  // hide dotfiles by default
             is_linux_console
         );
     };
 
-    std::unique_ptr<FileManager> fm = make_fm(rows, cols);
+    std::unique_ptr<FileManager> fm = make_fm(rows, cols, start_path);
     fm->refresh_entries();
 
     bool running = true;
@@ -265,7 +265,7 @@ int main(int argc, char** argv) {
             clear();
             getmaxyx(stdscr, rows, cols);
             // recreate FileManager to adapt to new size
-            fm = make_fm(rows, cols);
+            fm = make_fm(rows, cols, fm.get_cwd());
             fm->refresh_entries();
             continue;
         }

@@ -18,14 +18,14 @@ T.U.I.L.E is a project that aims to:
 
 # Installation
 
-### 1. Clone the repository
+## 1. Clone the repository
 
 ```bash
 git clone https://github.com/EmileF67/Tuile.git
 cd Tuile
 ```
 
-### 2. Install dependencies
+## 2. Install dependencies
 
 The main library used in this project is **ncurses**.
 
@@ -43,31 +43,59 @@ sudo pacman -Syu
 sudo pacman -S ncurses
 ```
 
-### 3. Install icons
+## 3. Install icons
 
 The icons used in this project are from the Noto Color Font Emoji
 
-* **Debian / Ubuntu**:
+### Debian / Ubuntu:
 
+**If you want a basic one :**
 ```bash
 sudo apt install fonts-noto-color-emoji
 ```
 
-* **Arch-based systems**:
+**If you want a better one :**
+```bash
+cd /tmp
+wget https://github.com/ryanoasis/nerd-fonts/releases/download/v3.4.0/CascadiaCode.zip
+```
+Change `3.4.0` by the last version if needed.
 
+**From there 2 options:**
+
+- First you install it by yourself :
+```bash
+unzip CaskaydiaCove.zip -d CaskaydiaCove
+mkdir -p ~/.local/share/fonts
+cp CaskaydiaCove/*.ttf ~/.local/share/fonts/
+fc-cache -fv
+```
+- Second you use another way (Font Manager):
+```bash
+sudo apt install font-manager
+```
+
+### Arch-based systems:
+
+**If you want a basic one :**
 ```bash
 sudo pacman -S noto-fonts-emoji
 ```
 
+**If you want a better one :**
+```bash
+yay -S nerd-fonts-caskaydia-cove
+```
 
 
-### 4. Create the build directory
+
+## 4. Create the build directory
 
 ```bash
 mkdir -p build
 ```
 
-### 5. Compile the project
+## 5. Compile the project
 
 ```bash
 make
