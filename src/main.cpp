@@ -254,10 +254,10 @@ int main(int argc, char** argv) {
 
         int ch = getch();
 
-        if (ch == 'q' || ch == 'Q') {
-            running = false;
-            break;
-        }
+        // if (ch == 'q' || ch == 'Q') {
+        //     running = false;
+        //     break;
+        // }
         
         // TODO : changer la taille d'affichage des variables de la classe directement.
         // TODO : stocker les variables calculées si possible tant qu'on change pas de taille.
