@@ -265,7 +265,7 @@ int main(int argc, char** argv) {
             clear();
             getmaxyx(stdscr, rows, cols);
             // recreate FileManager to adapt to new size
-            fm = make_fm(rows, cols, fm.get_cwd());
+            fm = make_fm(rows, cols, fm->get_cwd());
             fm->refresh_entries();
             continue;
         }
