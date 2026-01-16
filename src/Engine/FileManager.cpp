@@ -206,7 +206,7 @@ void FileManager::refresh_entries() {
             }
         }
 
-        // sending new entries from <temp> to <entries>
+    // sending new entries from <temp> to <entries>
     entries = temp;
 
     // const fs::filesystem_error& e
@@ -285,8 +285,8 @@ std::string obtenir_permissions(const fs::path& p) {
 
 
 void FileManager::draw() {
-    int rows, cols;
-    getmaxyx(win, rows, cols);
+    int _, cols;
+    getmaxyx(win, _, cols);
 
     int x1 = x.first;
     int y1 = x.second;
