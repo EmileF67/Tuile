@@ -8,6 +8,13 @@
 #include <filesystem>
 #include <memory>
 
+struct EntryDisplay {
+    std::string icon;
+    std::string size;
+    attr_t color;
+    attr_t color_bg;
+    std::string permissions;
+};
 
 class Popup; // forward declaration
 
@@ -48,9 +55,13 @@ class FileManager {
         bool display_icons;
         bool display_perms;
 
+
     public:
-    FileManager(WINDOW* stdscr, std::pair<int,int> x_, std::pair<int,int> y_, const std::string& start_path_, bool display_size_, bool display_dotfiles_, bool is_linux_console_);
-    ~FileManager();
+        // Constructeur
+        FileManager(WINDOW* stdscr, std::pair<int,int> x_, std::pair<int,int> y_, const std::string& start_path_, bool display_size_, bool display_dotfiles_, bool is_linux_console_);
+
+        // Destructeur
+        ~FileManager();
 
         // Affiche l'application
         void draw();
@@ -58,20 +69,35 @@ class FileManager {
         //Gère la navigation clavier
         void handle_key(int key);
 
-        // Retourne un nombre de bits sous format plus lisible par l'entier (Donc Mo, Go, etc.....)
-        std::string human_readable_size(long long size);
+        // Génération de la liste des entrée du cwd
+        void refresh_entries();
+
+        // Obtenir le cwd
+        std::string get_cwd() { return cwd; };
+        
+
+    private:
+        // Copie un élément d'un endroit vers un autre (récursif)
+        void copy_to_path();
 
         // Tri alphabétique d'abord des dossiers, puis fichiers
         std::vector<std::string> tri_dossiers_fichiers(const std::vector<std::string>& lst);
 
-        // Génération de la liste des entrée du cwd
-        void refresh_entries();
+        // Retourne un nombre de bits sous format plus lisible par l'entier (Donc Mo, Go, etc.....)
+        std::string human_readable_size(long long size);
 
-        // Copie un élément d'un endroit vers un autre (récursif)
-        void copy_to_path();
+        // Affiche les éléments principaux du filemanager
+        void draw_header(int x1, int y1, int x2, int y2, std::string* display_text);
 
-        // Obtenir le cwd
-        std::string get_cwd() { return cwd; };
+        // Affiche toutes les entrées qui sont visibles (en fonction du scroll)
+        void draw_entries(int x1, int y1, int x2, int cols);
+
+        // Affiche les popups si existants
+        void draw_popups();
+
+        // Renvoie les détails d'affichage d'une entrée
+        EntryDisplay get_entry_display_info(std::string entry);
+
 
 };
 

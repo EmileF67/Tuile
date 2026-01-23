@@ -11,14 +11,40 @@
 #include "Engine/Popup.h"
 
 
+// ==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==
+
 // INIT COLORS :
-// 1 | Blue   | None | init_pair(1, 12, 0)
-// 2 | Green  | None | init_pair(1, 10, 0)
-// 3 | Cyan   | None | init_pair(1, 14, 0)
-// 4 | Yellow | None | init_pair(1, 11, 0)
-// 5 | White  | None | init_pair(1, 15, 0)
+// 1  | fg | Bleu  | dossier
+// 2  | fg | Vert  | fichier
+// 3  | fg | Cyan  | dossier sélectionné
+// 4  | fg | Jaune | fichier sélectionné
+// 5  | fg | Blanc | taille
+// 6  | fg | Gris  | taille && cadre (gris)
 
+// 7  | bg | Bleu  | dossier
+// 8  | bg | Vert  | fichier
+// 9  | bg | Cyan  | dossier sélectionné
+// 10 | bg | Jaune | fichier sélectionné
 
+// ==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==
+
+// Décalage normal -> sélectionné : +2
+// Décalage fg     -> bg          : +6
+
+// ==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==
+
+// #define FG_BLUE   COLOR_PAIR(1)
+// #define FG_GREEN  COLOR_PAIR(2)
+// #define FG_CYAN   COLOR_PAIR(3)
+// #define FG_YELLOW COLOR_PAIR(4)
+// #define FG_WHITE  COLOR_PAIR(5)
+// #define FG_GREY   COLOR_PAIR(6)
+// #define BG_BLUE   COLOR_PAIR(7)
+// #define BG_GREEN  COLOR_PAIR(8)
+// #define BG_CYAN   COLOR_PAIR(9)
+// #define BG_YELLOW COLOR_PAIR(10)
+
+// ==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==
 
 namespace fs = std::filesystem;
 
@@ -35,7 +61,7 @@ FileManager::FileManager(WINDOW* stdscr, std::pair<int,int> x_, std::pair<int,in
       display_dotfiles(display_dotfiles_),
       is_linux_console(is_linux_console_)
 {
-    // initialize members
+    // On initialise chaque variables
     cwd = start_path;
     path_input = "";
     selected = 0;
@@ -59,93 +85,139 @@ FileManager::FileManager(WINDOW* stdscr, std::pair<int,int> x_, std::pair<int,in
     display_perms = false;
 }
 
-bool is_image_file(const std::string& filename) {
+
+// Renvoie true dans le cas où le fichier passé en argument est une image
+//  vérifie si l'extension est connue dans une liste d'extensions d'images
+bool is_image_file(const std::string& filename) 
+{
+    // Déclaration
     static const std::set<std::string> image_exts = {
         "bmp","dib","jpg","jpeg","jpe","png","gif",
         "tif","tiff","webp","heif","heic","ico","cur",
         "svg","svgz","psd","cr2","nef","arw","dng","rw2"
     };
-
     std::string ext;
-    size_t pos = filename.find_last_of('.');
-    if (pos == std::string::npos) return false;
 
+    // On trouve la dernière occurence d'un '.' dans le string
+    size_t pos = filename.find_last_of('.');
+    if (pos == std::string::npos) return false;     // Si il n'est pas trouvé on retourne false
+
+    // On extrait les derniers caractères après le '.' trouvé.
     ext = filename.substr(pos + 1);
-    std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+    std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);     // On transforme en lowercase l'extension
 
     return image_exts.count(ext) > 0;
 }
 
 
-std::string rjust(const std::string& str, size_t width, char fill = ' ') {
-    if (str.size() >= width)
-        return str;
-    return std::string(width - str.size(), fill) + str;
-}
+// TODO : à supprimer
+// std::string rjust(const std::string& str, size_t width, char fill = ' ') {
+//     if (str.size() >= width)
+//         return str;
+//     return std::string(width - str.size(), fill) + str;
+// }
 
-std::string FileManager::human_readable_size(long long size) {
+
+// Transforme un nombre d'octets en version lisible
+std::string FileManager::human_readable_size(long long size)
+{
+    // Déclaration
     const char* units[] = {"B", "K", "M", "G", "T", "P"};
-    double s = static_cast<double>(size);
+    double s = static_cast<double>(size);     // pour garder les décimales
     int unit = 0;
+    char buf[64];
+
+    // La boucle va trouver l'unitée adéquoite en divisant le nombre tant que possible
     while (s >= 1024.0 && unit < 5) {
         s /= 1024.0;
-        ++unit;
+        unit++;
     }
-    char buf[64];
+
+    // Si on a que des octets, on les affiche simplement
     if (unit == 0) {
-        std::snprintf(buf, sizeof(buf), "%lld %s", static_cast<long long>(size), units[unit]);
+        std::snprintf(
+            buf,
+            sizeof(buf),
+            "%lld %s",
+            static_cast<long long>(size),
+            units[unit]
+        );
+
+    // Sinon on l'affiche avec un seul chiffre après la virgule
     } else {
-        std::snprintf(buf, sizeof(buf), "%.1f %s", s, units[unit]);
+        std::snprintf(
+            buf,
+            sizeof(buf),
+            "%.1f %s",
+            s,
+            units[unit]
+        );
     }
-    return std::string(buf);
+
+    return std::string(buf);    // Convertit buffer en string
 }
 
-static bool naturalCompare(const std::string& a, const std::string& b) {
+
+// On compare le texte mais aussi les chiffres. Donc file2 apparaitra avant file10.
+// Comparaison naturelle != Comparaison lexicographique
+static bool naturalCompare(const std::string& a, const std::string& b)
+{
+    // Déclaration
     size_t i = 0, j = 0;
 
+    // On ne dépasser pas la taille max des deux chaines
     while (i < a.size() && j < b.size()) {
+        // Si les deux caractères sont des nombres
         if (std::isdigit(a[i]) && std::isdigit(b[j])) {
-            // Lire les nombres
+            // Lire les nombres pour en connaître les coordonnées de début et de fin dans chaque string
             size_t i_start = i;
             while (i < a.size() && std::isdigit(a[i])) ++i;
             size_t j_start = j;
             while (j < b.size() && std::isdigit(b[j])) ++j;
-
+            
+            // On les transforme en nombres entier
             int numA = std::stoi(a.substr(i_start, i - i_start));
             int numB = std::stoi(b.substr(j_start, j - j_start));
-
+            
+            // Si ils ne sont pas égaux
             if (numA != numB)
                 return numA < numB;
         } else {
+            // Comparaison char par char classique
             if (a[i] != b[j])
                 return a[i] < b[j];
+            // On avance
             ++i;
             ++j;
         }
     }
+    // Si une chaine est un préfixe de l'autre : "file" < "file1"
     return a.size() < b.size();
 }
 
-std::vector<std::string> FileManager::tri_dossiers_fichiers(const std::vector<std::string>& lst) {
+
+// Renvoie une liste triée de dossiers, puis de fichiers (avec comparaison naturelle)
+std::vector<std::string> FileManager::tri_dossiers_fichiers(const std::vector<std::string>& lst)
+{
+    // Déclaration
     std::vector<std::string> lstdir;
     std::vector<std::string> lstfile;
 
+    // Sépare les fichiers et les dossiers
     for (const auto& e : lst) {
         fs::path p = fs::path(cwd) / e;
         std::error_code ec;
         bool is_dir = fs::is_directory(p, ec);
-        if (ec) {
-            lstfile.push_back(e);
-        } else if (is_dir) {
-            lstdir.push_back(e);
-        } else {
-            lstfile.push_back(e);
-        }
+        if      (ec)     { lstfile.push_back(e); } 
+        else if (is_dir) { lstdir.push_back(e);  } 
+        else             { lstfile.push_back(e); }
     }
 
+    // Trie la liste des fichiers, puis des dossiers indépendemment et avec la comparaison naturelle
     std::sort(lstdir.begin(), lstdir.end(), naturalCompare);
     std::sort(lstfile.begin(), lstfile.end(), naturalCompare);
 
+    // Créer un nouveau vecteur et alloue de la mémoire pour combiner la liste des dossiers et des fichiers
     std::vector<std::string> result;
     result.reserve(lstdir.size() + lstfile.size());
     result.insert(result.end(), lstdir.begin(), lstdir.end());
@@ -155,7 +227,9 @@ std::vector<std::string> FileManager::tri_dossiers_fichiers(const std::vector<st
 }
 
 
-void FileManager::refresh_entries() {
+// Recréer la liste des entrées (dossiers et fichiers contenu dans le chemin actuel (cwd))
+void FileManager::refresh_entries()
+{
     // Déclaration d'une variable pour accueillir les éléments du cwd.
     std::vector<std::string> temp;
     
@@ -173,26 +247,31 @@ void FileManager::refresh_entries() {
             items.push_back(entry.path().filename().string());
         }
 
-        // Appeler la fonction de tri (comme en Python)
+        // Appeler la fonction de tri
         items = tri_dossiers_fichiers(items);
 
+        // Filtrage dynamique en fonction de la chaine entrée dans l'input
         if (editing_path) {
-            // Filtrage dynamique
+            // Si on veut les fichiers cachés
             if (display_dotfiles) {
                 for (const auto& e : items) {
-                    if (e.rfind(path_input, 0) == 0) { // commence par path_input
+                    // Si l'élément actuel commence par <path_input>
+                    if (e.rfind(path_input, 0) == 0) {
                         temp.push_back(e);
                     }
                 }
             } else {
                 for (const auto& e : items) {
+                    // Si l'élément actuel commence par <path_input>
                     if (e.rfind(path_input, 0) == 0 && e[0] != '.' && e != "__pycache__") {
                         temp.push_back(e);
                     }
                 }
             }
+
+        // Filtrage normal
         } else {
-            // Filtrage normal
+            // Si on veut les fichiers cachés
             if (display_dotfiles) {
                 for (const auto& e: items) {
                     temp.push_back(e);
@@ -206,14 +285,13 @@ void FileManager::refresh_entries() {
             }
         }
 
-    // sending new entries from <temp> to <entries>
-    entries = temp;
+        // On actualise la liste des entrées
+        entries = temp;
 
-    // const fs::filesystem_error& e
     } catch (const fs::filesystem_error& e) {
-        entries.clear();
-        entries.push_back("..");
-        entries.push_back("PERMISSION ERROR");
+        entries.clear();                        // Si une erreur se présente on efface la liste des entrées
+        entries.push_back("..");                // On ajoute un moyen de retour
+        entries.push_back("PERMISSION ERROR");  // On ajoute l'indication d'une erreur
     }
 
     // Finally we modify the selected entry
@@ -225,7 +303,8 @@ void FileManager::refresh_entries() {
 }
 
 
-void FileManager::copy_to_path() {
+void FileManager::copy_to_path()
+{
     // Recopier la fonction depuis python
     try {
         fs::path dest_path = fs::path(cwd) / fs::path(path_to_copy).filename();
@@ -250,7 +329,8 @@ void FileManager::copy_to_path() {
 }
 
 
-std::string obtenir_permissions(const fs::path& p) {
+std::string obtenir_permissions(const fs::path& p)
+{
     std::error_code ec;
     fs::file_status status = fs::status(p, ec);
 
@@ -284,7 +364,9 @@ std::string obtenir_permissions(const fs::path& p) {
 }
 
 
-void FileManager::draw() {
+void FileManager::draw()
+{
+    // Déclaration
     int _, cols;
     getmaxyx(win, _, cols);
 
@@ -301,160 +383,12 @@ void FileManager::draw() {
         mvwaddstr(win, x1 + i, y1, std::string(w, ' ').c_str());
     }
 
-    // Cadre
-    Cadre cadre(win, {x1 - 1, y1 - 1}, {x2 + 1, y2 + 1}, is_linux_console);
-    cadre.draw();
-    cadre.sep(x1 + 1);
-
-    // Afficher le chemin
-    std::string display_text;
-    if (editing_path) {
-        if (cwd == "/") {
-            display_text = " " + cwd + path_input;
-        } else {
-            display_text = " " + cwd + "/" + path_input;
-        }
-    } else {
-        display_text = " " + cwd + " ";
-    }
-    mvwaddstr(win, x1, y1, display_text.c_str());
+    // Affiche le principale du filemanager
+    std::string display_text = "";
+    this->draw_header(x1, y1, x2, y2, &display_text);
 
     // Afficher les entrées
-    size_t start = static_cast<size_t>(scroll_offset);
-    size_t end = std::min(entries.size(), start + static_cast<size_t>(x2-x1 - 1));
-    std::vector<std::string> visible_entries(entries.begin() + start, entries.begin() + end);
-
-    for (std::size_t i = 0; i < visible_entries.size(); i++) {
-        int abs_idx = static_cast<int>(start + i);
-        std::string entry = visible_entries[i];
-        std::string size_str = "";
-        fs::path full_path = fs::path(cwd) / entry;
-
-        int color = 5;
-        int colorL = 5;
-        std::string icon;
-
-        // Use the non-throwing overload to detect directory status. If we
-        // can't stat the entry (permission denied), we display it but mark
-        // its size as unknown.
-        std::error_code ec;
-        bool is_dir = fs::is_directory(full_path, ec);
-
-        if (ec) {
-            // Permission or other error while querying the entry. Show a
-            // neutral icon and unknown size.
-            color = 5;
-            colorL = 5;
-            if (is_linux_console || !display_icons) {
-                icon = "  ";
-            } else {
-                icon = "? ";
-            }
-            size_str = "?";
-        } else if (is_dir) {
-            color = 1;
-            colorL = 7;
-            if (is_linux_console || !display_icons) {
-                icon = "  ";
-            } else {
-                icon = "🖿  ";
-            }
-            size_str = "";
-        } else {
-            // Essayer d'obtenir la taille de l'élément.
-            long long temp_size = 0;
-            try {
-                auto sz = std::filesystem::file_size(full_path);
-                temp_size = static_cast<long long>(sz);
-                size_str = human_readable_size(temp_size);
-            } catch (const std::filesystem::filesystem_error&) {
-                size_str = "?";
-            }
-
-            // Identification exacte de l'élément
-            color = 2;
-            colorL = 8;
-            if (is_linux_console || !display_icons) {
-                icon = "  ";
-            } else {
-                std::string ext = std::filesystem::path(entry).extension().string();
-                if (temp_size == 0) {
-                    icon = "🗋 ";
-                } else if (is_image_file(entry)) {
-                    icon = "🖻 ";
-                } else {
-                    icon = "🗎 ";
-                }
-
-                if (aSpace) {
-                    icon = icon + " ";
-                }
-            }
-        }
-
-        std::string prefix;
-        if (abs_idx == selected) {
-            prefix = "> ";
-            if (ec || is_dir) {
-                color = 3; // bleu-ish for directory or error
-                colorL = 9;
-            } else {
-                color = 4; // vert
-                colorL = 10;
-            }
-        } else {
-            prefix = "  ";
-        }
-
-
-        // Obtenir les permissions de l'élément
-        std::string permissions;
-        if (!ec && display_perms) {
-            permissions = obtenir_permissions(full_path);
-        } else {
-            permissions = "";
-        }
-
-
-        std::string text = prefix + permissions + icon + entry;
-        wattron(win, COLOR_PAIR(color));
-        mvwaddstr(win, x1 + 2 + static_cast<int>(i), y1, text.c_str());
-        wattroff(win, COLOR_PAIR(color));
-        
-        // Afficher taille de l'élément
-        if (abs_idx == selected) {
-            color = 4; // jaune
-        } else {
-            if (is_linux_console) {
-                color = 5; // gris
-            } else {
-                color = 6; // blanc
-            }
-        }
-        wattron(win, COLOR_PAIR(color));
-        mvwaddstr(win, x1 + 2 + static_cast<int>(i), y1 + cols - 10 - static_cast<int>(size_str.size()), size_str.c_str()); // TODO
-        wattroff(win, COLOR_PAIR(color));
-
-        std::string iconasc;
-        if (is_linux_console || !display_icons) {
-            if (colorL == 7 || colorL == 9) {
-                iconasc = "D";
-            } else {
-                iconasc = "F";
-            }
-
-            int enPlus;
-            if (display_perms) {
-                enPlus = 12;
-            } else {
-                enPlus = 0;
-            }
-
-            wattron(win, COLOR_PAIR(colorL));
-            mvwaddstr(win, x1 + 2 + static_cast<int>(i), y1 + 2 + enPlus, iconasc.c_str());
-            wattroff(win, COLOR_PAIR(colorL));
-        }
-    }
+    this->draw_entries(x1, y1, x2, cols);
 
     // Si l'on est entrain de modifier le chemin manuellement
     if (editing_path) {
@@ -524,9 +458,193 @@ void FileManager::draw() {
 }
 
 
+void FileManager::draw_header(int x1, int y1, int x2, int y2, std::string* display_text)
+{
+    // Cadre
+    Cadre cadre(win, {x1 - 1, y1 - 1}, {x2 + 1, y2 + 1}, is_linux_console);
+    cadre.draw();
+    cadre.sep(x1 + 1);
+
+    // Afficher le chemin
+    if (editing_path) {
+        if (cwd == "/") {
+            *display_text = " " + cwd + path_input;
+        } else {
+            *display_text = " " + cwd + "/" + path_input;
+        }
+    } else {
+        *display_text = " " + cwd + " ";
+    }
+    mvwaddstr(win, x1, y1, (*display_text).c_str());
+}
+
+void FileManager::draw_entries(int x1, int y1, int x2, int cols)
+{
+    int color = 0;
+    std::string icon;
+    size_t start = static_cast<size_t>(scroll_offset);
+    size_t end = std::min(entries.size(), start + static_cast<size_t>(x2-x1 - 1));
+    std::vector<std::string> visible_entries(entries.begin() + start, entries.begin() + end);
+    
+    for (std::size_t i = 0; i < visible_entries.size(); i++) {
+        int abs_idx = static_cast<int>(start + i);
+        std::string entry = visible_entries[i];
+        EntryDisplay details = this->get_entry_display_info(entry);
+
+        // On détermine si l'élément est sélectionné et on applique des changements en fonction
+        std::string prefix = "  ";
+        if (abs_idx == selected) {
+            prefix = "> ";
+            details.color += 2; // cyan ou vert
+            details.color_bg += 2;
+        }
+
+        // Afficher la ligne de l'entrée
+        color = details.color;
+        std::string text = prefix + details.permissions + "   " + entry;
+        wattron(win, COLOR_PAIR(color));
+        mvwaddstr(win, x1 + 2 + static_cast<int>(i), y1, text.c_str());
+        wattroff(win, COLOR_PAIR(color));
+
+        // Afficher l'icone
+        color = details.color;
+        icon = details.icon;
+        if (is_linux_console || !display_icons)
+        {
+            color = details.color_bg;
+            icon = icon.substr(0, 1);
+        }
+
+        int enPlus = 0;
+        if (display_perms) {
+            enPlus = 12;
+        }
+        wattron(win, COLOR_PAIR(color));
+        mvwaddstr(win, x1 + 2 + static_cast<int>(i), y1 + 2 + enPlus, icon.c_str());
+        wattroff(win, COLOR_PAIR(color));
+
+        // Calculer couleur de l'affichage de la taille de l'élément
+        if (abs_idx == selected) {
+            color = 4; // jaune
+        } else {
+            if (is_linux_console) {
+                color = 5; // gris
+            } else {
+                color = 6; // blanc
+            }
+        }
+
+        // Afficher taille de l'élément
+        wattron(win, COLOR_PAIR(color));
+        mvwaddstr(win, x1 + 2 + static_cast<int>(i), y1 + cols - 10 - static_cast<int>(details.size.size()), details.size.c_str()); // TODO
+        wattroff(win, COLOR_PAIR(color));
+    }
+}
+
+void FileManager::draw_popups()
+{
+
+}
+
+EntryDisplay FileManager::get_entry_display_info(std::string entry)
+{
+    // Déclaration & initialisation
+    fs::path full_path = fs::path(cwd) / entry;
+    std::string size_str = "";
+    int color = 5;
+    int color_bg = 5;
+    std::string icon = "";
 
 
-void FileManager::handle_key(int key) {
+    // Use the non-throwing overload to detect directory status. If we
+    // can't stat the entry (permission denied), we display it but mark
+    // its size as unknown.
+    std::error_code ec;
+    bool is_dir = fs::is_directory(full_path, ec);
+
+    // Si il y a une erreur
+    if (ec)
+    {
+        icon = "? ";
+        if (is_linux_console || !display_icons) {
+            icon = "  ";
+        }
+
+        size_str = "?";
+    }
+
+    // Si c'est un dossier
+    else if (is_dir)
+    {
+        color = 1;
+        color_bg = 7;
+
+        icon = "🖿  ";
+        if (is_linux_console || !display_icons) {
+            icon = "D ";
+        }
+
+        size_str = "";
+    }
+
+    // Si c'est un fichier
+    else
+    {
+        // Essayer d'obtenir la taille de l'élément.
+        long long temp_size = 0;
+        try {
+            auto sz = std::filesystem::file_size(full_path);
+            temp_size = static_cast<long long>(sz);
+            size_str = human_readable_size(temp_size);
+        } catch (const std::filesystem::filesystem_error&) {
+            size_str = "?";
+        }
+
+        // Identification exacte de l'élément
+        color = 2;
+        color_bg = 8;
+        if (is_linux_console || !display_icons) {
+            icon = "F ";
+        } else {
+            // TODO : utilser la ligne juste en dessous ?
+            // std::string ext = std::filesystem::path(entry).extension().string();
+            if (temp_size == 0) {
+                icon = "🗋 ";
+            } else if (is_image_file(entry)) {
+                icon = "🖻 ";
+            } else {
+                icon = "🗎 ";
+            }
+
+            if (aSpace) {
+                icon = icon + " ";
+            }
+        }
+    }
+
+    // Obtenir les permissions de l'élément
+    std::string permissions = "";
+    if (!ec && display_perms) {
+        permissions = obtenir_permissions(full_path);
+    }
+
+    // On créer une nouvelle instance des détails de <entry>
+    EntryDisplay entry_details;
+
+    // On remplis les détails
+    entry_details.icon = icon;
+    entry_details.size = size_str;
+    entry_details.color = color;
+    entry_details.color_bg = color_bg;
+    entry_details.permissions = permissions;
+
+    return entry_details;
+}
+
+
+
+void FileManager::handle_key(int key)
+{
     int rows, cols;
     getmaxyx(win, rows, cols);
     // Compute the number of visible rows inside this FileManager window
