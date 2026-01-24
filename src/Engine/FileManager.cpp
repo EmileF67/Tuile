@@ -11,6 +11,9 @@
 #include "Engine/Popup.h"
 
 
+// TODO
+// compatibilité git ??
+
 // ==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==
 
 // INIT COLORS :
@@ -45,6 +48,9 @@
 // #define BG_YELLOW COLOR_PAIR(10)
 
 // ==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==
+
+
+#define OFFSET_SELECTIONNE 2
 
 namespace fs = std::filesystem;
 
@@ -108,15 +114,6 @@ bool is_image_file(const std::string& filename)
 
     return image_exts.count(ext) > 0;
 }
-
-
-// TODO : à supprimer
-// std::string rjust(const std::string& str, size_t width, char fill = ' ') {
-//     if (str.size() >= width)
-//         return str;
-//     return std::string(width - str.size(), fill) + str;
-// }
-
 
 // Transforme un nombre d'octets en version lisible
 std::string FileManager::human_readable_size(long long size)
@@ -289,9 +286,9 @@ void FileManager::refresh_entries()
         entries = temp;
 
     } catch (const fs::filesystem_error& e) {
-        entries.clear();                        // Si une erreur se présente on efface la liste des entrées
-        entries.push_back("..");                // On ajoute un moyen de retour
-        entries.push_back("PERMISSION ERROR");  // On ajoute l'indication d'une erreur
+        entries.clear();                                                      // Si une erreur se présente on efface la liste des entrées
+        entries.push_back("..");                                              // On ajoute un moyen de retour
+        entries.push_back("Permission Error, or another one, idk. (gl :3)");  // On ajoute l'indication d'une erreur
     }
 
     // Finally we modify the selected entry
@@ -366,7 +363,7 @@ std::string obtenir_permissions(const fs::path& p)
 
 void FileManager::draw()
 {
-    // Déclaration
+    // Déclaration & initialisation
     int _, cols;
     getmaxyx(win, _, cols);
 
@@ -395,6 +392,104 @@ void FileManager::draw()
         wmove(win, x1, y1 + static_cast<int>(display_text.size()));
     }
 
+    this->draw_popups();
+    
+}
+
+
+void FileManager::draw_header(int x1, int y1, int x2, int y2, std::string* display_text)
+{
+    // Cadre
+    Cadre cadre(win, {x1 - 1, y1 - 1}, {x2 + 1, y2 + 1}, is_linux_console);
+    cadre.draw();
+    cadre.sep(x1 + 1);
+
+    // Afficher le chemin
+    if (editing_path) {
+        if (cwd == "/") {
+            *display_text = " " + cwd + path_input;
+        } else {
+            *display_text = " " + cwd + "/" + path_input;
+        }
+    } else {
+        *display_text = " " + cwd + " ";
+    }
+    mvwaddstr(win, x1, y1, (*display_text).c_str());
+}
+
+void FileManager::draw_entries(int x1, int y1, int x2, int cols)
+{
+    // Déclaration
+    int color = 0;
+    std::string icon;
+    int abs_idx;
+    std::string entry;
+    EntryDisplay details;
+    size_t start = static_cast<size_t>(scroll_offset);
+    size_t end = std::min(entries.size(), start + static_cast<size_t>(x2-x1 - 1));
+    std::vector<std::string> visible_entries(entries.begin() + start, entries.begin() + end);
+    
+    for (std::size_t i = 0; i < visible_entries.size(); i++) {
+        abs_idx = static_cast<int>(start + i);
+        entry   = visible_entries[i];
+        details = this->get_entry_display_info(entry);
+
+        // On détermine si l'élément est sélectionné et on applique des changements en fonction
+        std::string prefix = "  ";
+        if (abs_idx == selected) {
+            prefix = "> ";
+            details.color += OFFSET_SELECTIONNE; // cyan ou vert
+            details.color_bg += OFFSET_SELECTIONNE; // cyan ou vert mais en background
+        }
+
+        // Afficher la ligne de l'entrée
+        color = details.color;
+        std::string text = prefix + details.permissions + "   " + entry;
+        wattron(win, COLOR_PAIR(color));
+        mvwaddstr(win, x1 + 2 + static_cast<int>(i), y1, text.c_str());
+        wattroff(win, COLOR_PAIR(color));
+
+        // Déterminer le type d'affichage de l'icone et appliquer des changements
+        color = details.color;
+        icon = details.icon;
+        if (is_linux_console || !display_icons)
+        {
+            color = details.color_bg;
+            icon = icon.substr(0, 1);
+        }
+        
+        // Si on affiche les permissions de chaque élément, on décale l'icone de 12 cases
+        // (exemple de perms : "rwx rwx rwx ")
+        int enPlus = 0;
+        if (display_perms) {
+            enPlus = 12;
+        }
+
+        // Afficher l'icone
+        wattron(win, COLOR_PAIR(color));
+        mvwaddstr(win, x1 + 2 + static_cast<int>(i), y1 + 2 + enPlus, icon.c_str());
+        wattroff(win, COLOR_PAIR(color));
+
+        // Calculer couleur de l'affichage de la taille de l'élément
+        if (abs_idx == selected) {
+            color = 4; // jaune
+        } else {
+            if (is_linux_console) {
+                color = 5; // gris
+            } else {
+                color = 6; // blanc
+            }
+        }
+
+        // Afficher taille de l'élément
+        wattron(win, COLOR_PAIR(color));
+        mvwaddstr(win, x1 + 2 + static_cast<int>(i), y1 + cols - 10 - static_cast<int>(details.size.size()), details.size.c_str()); // TODO
+        wattroff(win, COLOR_PAIR(color));
+    }
+}
+
+void FileManager::draw_popups()
+{
     // Si l'on est entrain de faire un choix pour un nouvel élément
     if (input_new) {
         if (!popup) {
@@ -455,95 +550,6 @@ void FileManager::draw()
         }
         if (popup) popup->draw();
     }
-}
-
-
-void FileManager::draw_header(int x1, int y1, int x2, int y2, std::string* display_text)
-{
-    // Cadre
-    Cadre cadre(win, {x1 - 1, y1 - 1}, {x2 + 1, y2 + 1}, is_linux_console);
-    cadre.draw();
-    cadre.sep(x1 + 1);
-
-    // Afficher le chemin
-    if (editing_path) {
-        if (cwd == "/") {
-            *display_text = " " + cwd + path_input;
-        } else {
-            *display_text = " " + cwd + "/" + path_input;
-        }
-    } else {
-        *display_text = " " + cwd + " ";
-    }
-    mvwaddstr(win, x1, y1, (*display_text).c_str());
-}
-
-void FileManager::draw_entries(int x1, int y1, int x2, int cols)
-{
-    int color = 0;
-    std::string icon;
-    size_t start = static_cast<size_t>(scroll_offset);
-    size_t end = std::min(entries.size(), start + static_cast<size_t>(x2-x1 - 1));
-    std::vector<std::string> visible_entries(entries.begin() + start, entries.begin() + end);
-    
-    for (std::size_t i = 0; i < visible_entries.size(); i++) {
-        int abs_idx = static_cast<int>(start + i);
-        std::string entry = visible_entries[i];
-        EntryDisplay details = this->get_entry_display_info(entry);
-
-        // On détermine si l'élément est sélectionné et on applique des changements en fonction
-        std::string prefix = "  ";
-        if (abs_idx == selected) {
-            prefix = "> ";
-            details.color += 2; // cyan ou vert
-            details.color_bg += 2;
-        }
-
-        // Afficher la ligne de l'entrée
-        color = details.color;
-        std::string text = prefix + details.permissions + "   " + entry;
-        wattron(win, COLOR_PAIR(color));
-        mvwaddstr(win, x1 + 2 + static_cast<int>(i), y1, text.c_str());
-        wattroff(win, COLOR_PAIR(color));
-
-        // Afficher l'icone
-        color = details.color;
-        icon = details.icon;
-        if (is_linux_console || !display_icons)
-        {
-            color = details.color_bg;
-            icon = icon.substr(0, 1);
-        }
-
-        int enPlus = 0;
-        if (display_perms) {
-            enPlus = 12;
-        }
-        wattron(win, COLOR_PAIR(color));
-        mvwaddstr(win, x1 + 2 + static_cast<int>(i), y1 + 2 + enPlus, icon.c_str());
-        wattroff(win, COLOR_PAIR(color));
-
-        // Calculer couleur de l'affichage de la taille de l'élément
-        if (abs_idx == selected) {
-            color = 4; // jaune
-        } else {
-            if (is_linux_console) {
-                color = 5; // gris
-            } else {
-                color = 6; // blanc
-            }
-        }
-
-        // Afficher taille de l'élément
-        wattron(win, COLOR_PAIR(color));
-        mvwaddstr(win, x1 + 2 + static_cast<int>(i), y1 + cols - 10 - static_cast<int>(details.size.size()), details.size.c_str()); // TODO
-        wattroff(win, COLOR_PAIR(color));
-    }
-}
-
-void FileManager::draw_popups()
-{
-
 }
 
 EntryDisplay FileManager::get_entry_display_info(std::string entry)
@@ -790,22 +796,6 @@ void FileManager::handle_key(int key)
                         scroll_offset = 0;
                     }
                 }
-                // } else if (fs::is_directory(new_path)) {
-                //     cwd = new_path.string();
-                //     selected = 0;
-                //     scroll_offset = 0;
-                // } else { // Si c'est un fichier
-                //     if (editor == "vim") {
-                //         endwin();
-                //         std::string cmd = "vim \"" + new_path.string() + "\"";
-                //         system(cmd.c_str());
-                //         wrefresh(win);
-                //         doupdate();
-                //     } else if (editor == "vscode") {
-                //         std::string cmd = "code \"" + new_path.string() + "\"";
-                //         system(cmd.c_str());
-                //     }
-                // }
             }
 
             if (editing_path) {
