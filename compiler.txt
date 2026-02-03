@@ -3,7 +3,7 @@ g++ -Wall -Wextra -std=c++17 -Iinclude src/Engine/Cadre.cpp src/Engine/Input.cpp
 g++ -Wall -Wextra -std=c++17 -Iinclude src/Engine/System.cpp src/Engine/Popup.cpp src/Engine/Cadre.cpp src/Engine/Input.cpp src/main.cpp -lncurses -o build/main
 
 
-g++ -Wall -Wextra -std=c++17 -Iinclude src/Engine/*.cpp src/main.cpp -lncurses -o build/main
+g++ -Wall -Wextra -std=c++17 -Iinclude src/Engine/*.cpp src/Apps/*.cpp src/main.cpp -lncurses -o build/main
 
 
 Pour debian :
