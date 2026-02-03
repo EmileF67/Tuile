@@ -7,6 +7,8 @@
 #include <string>
 #include <filesystem>
 #include <memory>
+#include <unordered_set>
+#include "Engine/MessageBox.h"
 
 struct EntryDisplay {
     std::string icon;
@@ -14,6 +16,50 @@ struct EntryDisplay {
     attr_t color;
     attr_t color_bg;
     std::string permissions;
+};
+
+
+// Déclaration du clipboard
+enum class ClipboardMode {
+    None,
+    Copy,
+    Cut
+};
+
+struct ClipboardItem {
+    std::filesystem::path path;
+};
+
+struct Clipboard {
+    ClipboardMode mode = ClipboardMode::None;
+
+    // Nouveau : set rapide
+    std::unordered_set<std::filesystem::path> items;
+
+    // Vide le set et remet le mode à None
+    void clear() { 
+        items.clear(); 
+        mode = ClipboardMode::None;
+    }
+
+    // Vérifie si le clipboard est vide
+    bool empty() const { 
+        return items.empty(); 
+    }
+
+    // Vérifie si un élément est sélectionné
+    bool contains(const std::filesystem::path& item) const {
+        return items.find(item) != items.end();
+    }
+
+    // Toggle : ajoute si absent, retire si présent
+    void toggle(const std::filesystem::path& item) {
+        auto it = items.find(item);
+        if (it != items.end())
+            items.erase(it);
+        else
+            items.insert(item);
+    }
 };
 
 class Popup; // forward declaration
@@ -50,10 +96,13 @@ class FileManager {
         std::string path_to_copy;
         std::string editor;
         std::unique_ptr<Popup> popup;
+        std::unique_ptr<MessageBox> msgbox;
         bool cursor_on;
         bool aSpace;
         bool display_icons;
         bool display_perms;
+
+        Clipboard clipboard;
 
 
     public:
@@ -66,7 +115,7 @@ class FileManager {
         // Affiche l'application
         void draw();
 
-        //Gère la navigation clavier
+        // Gère la navigation clavier
         void handle_key(int key);
 
         // Génération de la liste des entrée du cwd
@@ -94,6 +143,9 @@ class FileManager {
 
         // Affiche les popups si existants
         void draw_popups();
+
+        // Affiche la messagebox
+        void draw_messagebox();
 
         // Renvoie les détails d'affichage d'une entrée
         EntryDisplay get_entry_display_info(std::string entry);

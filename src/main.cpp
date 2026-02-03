@@ -12,6 +12,10 @@
 #include <signal.h>
 #include <atomic>
 
+// TODO ULTIME
+// QUAND ON VEUT AFFICHER QUELQUE CHOSE, ON MODIFIE UN TABLEAU DEUX DIMENSIONS DE CARACTERES QUI REPRESENTE LE TERMINAL
+// ON LE COMPARE AVEC LE PRECEDENT QUAND ON AFFICHE POUR SAVOIR QUOI AFFICHER ET ON LE FAIT EN UNE FOIS POUR EVITER DE SURCHARGER LE CPU
+
 std::atomic<bool> stop(false);
 
 void handle_sigint(int) {
@@ -26,11 +30,11 @@ int main(int argc, char** argv) {
     setlocale(LC_ALL, "");
     signal(SIGINT, handle_sigint);
 
-    initscr();
-    cbreak();
-    noecho();
-    keypad(stdscr, TRUE);
-    curs_set(0);
+    initscr();              // Initialise ncurses, crée stdscr
+    cbreak();               // Entrée caractère par caractère
+    noecho();               // Pas d'écho automatique du clavier
+    keypad(stdscr, TRUE);   // Active les touches spéciales
+    curs_set(0);            // Cache le curseur
     
     timeout(100); // getch() attend max 100 ms
 
@@ -115,7 +119,7 @@ int main(int argc, char** argv) {
     curs_set(1);
     echo();
     nocbreak();
-    endwin();
+    endwin();       // Restaure le terminal
 
     return 0;
 }

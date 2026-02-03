@@ -6,13 +6,14 @@
 #include <iostream>
 #include <fstream>
 #include <set>
+#include <unordered_set>
 
 #include "Engine/Cadre.h"
 #include "Engine/Popup.h"
 
 
 // TODO
-// compatibilité git ??
+// compatibilité git (raccourcis pour clone, commit, ect....) ??
 
 // ==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==
 
@@ -49,10 +50,31 @@
 
 // ==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==
 
+namespace fs = std::filesystem;
+
+// ==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==
+// Clipboard
+
+// void Clipboard::clear() {
+//     mode = ClipboardMode::None;
+//     items.clear();
+// }
+
+// bool Clipboard::empty() const {
+//     return items.empty();
+// }
+
+// bool Clipboard::contains(const fs::path& item) const {
+//     return std::any_of(items.begin(), items.end(),
+//         [&](const ClipboardItem& it) {
+//             return it.path == item;
+//         });
+// }
+
+// ==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==
 
 #define OFFSET_SELECTIONNE 2
 
-namespace fs = std::filesystem;
 
 // define destructor here so Popup is a complete type for destruction
 FileManager::~FileManager() = default;
@@ -67,28 +89,30 @@ FileManager::FileManager(WINDOW* stdscr, std::pair<int,int> x_, std::pair<int,in
       display_dotfiles(display_dotfiles_),
       is_linux_console(is_linux_console_)
 {
-    // On initialise chaque variables
-    cwd = start_path;
-    path_input = "";
-    selected = 0;
-    scroll_offset = 0;
+    // On initialise chaque variable
+    cwd             = start_path;       // Le chemin vers de dossier actuel
+    path_input      = "";               // La chaine qui représente la recherche de l'utilisateur
+    selected        = 0;                // L'indice de l'élément selectionné (entries)
+    scroll_offset   = 0;                // Le scroll à ajouter lors de l'affichage des entrées
 
-    input_new = false;
-    nouveau = 0;
-    input_new_name = false;
-    new_name = "";
-    remove_element = false;
-    rename_element = false;
-    new_rename = "";
-    copying = false;
-    copy_mode = "";
-    path_to_copy = "";
-    editor = "vim";
-    popup.reset();
-    cursor_on = false;
-    aSpace = true;
-    display_icons = true;
-    display_perms = false;
+    input_new       = false;            // Si on veut le popup pour un nouvel élément
+    nouveau         = 0;                // Le choix du type du nouvel élément
+    input_new_name  = false;            // Si on veut le popup pour demander le nom du nouvel élément
+    new_name        = "";               // Le nom entré pour le nouvel élément
+    remove_element  = false;            // Si on veut retirer un élément
+    rename_element  = false;            // Si on veut renommer un élément
+    new_rename      = "";               // Le nom donné pour renommer l'élément
+    // copying         = false;            // Si on est entrain de copier
+    // copy_mode       = "";               // Le type de copie
+    // path_to_copy    = "";               // Le chemin à copier
+    editor          = "vim";            // L'éditeur défini par défaut
+    popup.reset();                      // Va contenir toute instance de popup
+    msgbox.reset();                     // Va contenir toute instance de MessageBox
+    cursor_on       = false;            // Si le curseur est activé ou non
+    aSpace          = true;             // Si on veut un expace en plus après l'icône
+    display_icons   = true;             // Si on affiche les icônes
+    display_perms   = false;            // Si on affiche les permissions de chaque élément
+    Clipboard clipboard;                // Un instance du Clipboard
 }
 
 
@@ -304,24 +328,42 @@ void FileManager::copy_to_path()
 {
     // Recopier la fonction depuis python
     try {
-        fs::path dest_path = fs::path(cwd) / fs::path(path_to_copy).filename();
+        fs::path path_to_copy;
+        fs::path dest_path;
 
         // Éviter d’écraser un fichier déjà existant
-        if (fs::exists(dest_path))
-            return;
+        // if (fs::exists(dest_path))
+            // return; // TODO changer ça pour afficher le problème
 
-        if (copy_mode == "c") {
-            if (fs::is_directory(path_to_copy)) {
-                fs::copy(path_to_copy, dest_path, fs::copy_options::recursive);
-            } else {
-                fs::copy_file(path_to_copy, dest_path);
+        for (const auto& path_to_copy : clipboard.items) {
+            fs::path dest_path = fs::path(cwd) / path_to_copy.filename();
+            switch (clipboard.mode) {
+                case ClipboardMode::Copy:
+                    if (fs::is_directory(path_to_copy)) 
+                        fs::copy(path_to_copy, dest_path, fs::copy_options::recursive);
+                    else 
+                        fs::copy_file(path_to_copy, dest_path);
+                    break;
+                case ClipboardMode::Cut:
+                    if (fs::exists(dest_path)) {
+                        throw std::runtime_error("Impossible de couper coller [" + path_to_copy.string() + "] vers [" + dest_path.string() + "] : l'élément existe déjà");
+                    }
+                    fs::rename(path_to_copy, dest_path);
+                    break;
+
+                default :
+                    break;
             }
-        } else if (copy_mode == "x") {
-            fs::rename(path_to_copy, dest_path); // Déplacement
         }
+        
+        clipboard.clear();
 
     } catch (const std::exception& e) {
-        std::cerr << "Erreur lors de la copie : " << e.what() << std::endl;
+        // std::cerr << "Erreur lors de la copie : " << e.what() << std::endl;
+        if (!msgbox) {
+            msgbox = std::make_unique<MessageBox>(win, std::string("Erreur lors de la copie :\n") + e.what(), is_linux_console);
+        }
+        clipboard.clear();
     }
 }
 
@@ -393,7 +435,19 @@ void FileManager::draw()
     }
 
     this->draw_popups();
+
+    this->draw_messagebox();
     
+}
+
+void FileManager::draw_messagebox()
+{
+    if (msgbox) {
+        msgbox->draw();
+        if (msgbox->is_entered()) {
+            msgbox.reset();
+        }
+    }
 }
 
 
@@ -435,16 +489,31 @@ void FileManager::draw_entries(int x1, int y1, int x2, int cols)
         details = this->get_entry_display_info(entry);
 
         // On détermine si l'élément est sélectionné et on applique des changements en fonction
-        std::string prefix = "  ";
+        std::string prefix = "";
+
+        fs::path total_path = fs::path(cwd) / entries[abs_idx];
+        if (clipboard.contains(total_path)) {
+            prefix += "*";
+        } else {
+            prefix += " ";
+        }
+        
+        std::string offset = "";
         if (abs_idx == selected) {
-            prefix = "> ";
+            prefix += ">";
             details.color += OFFSET_SELECTIONNE; // cyan ou vert
             details.color_bg += OFFSET_SELECTIONNE; // cyan ou vert mais en background
+            offset = " ";
+        } else {
+            prefix += "";
         }
+
+        prefix += " ";
+
 
         // Afficher la ligne de l'entrée
         color = details.color;
-        std::string text = prefix + details.permissions + "   " + entry;
+        std::string text = prefix + details.permissions + "    " + entry;
         wattron(win, COLOR_PAIR(color));
         mvwaddstr(win, x1 + 2 + static_cast<int>(i), y1, text.c_str());
         wattroff(win, COLOR_PAIR(color));
@@ -467,7 +536,7 @@ void FileManager::draw_entries(int x1, int y1, int x2, int cols)
 
         // Afficher l'icone
         wattron(win, COLOR_PAIR(color));
-        mvwaddstr(win, x1 + 2 + static_cast<int>(i), y1 + 2 + enPlus, icon.c_str());
+        mvwaddstr(win, x1 + 2 + static_cast<int>(i), y1 + 3 + enPlus, icon.c_str());
         wattroff(win, COLOR_PAIR(color));
 
         // Calculer couleur de l'affichage de la taille de l'élément
@@ -495,7 +564,7 @@ void FileManager::draw_popups()
         if (!popup) {
             using Choice = std::pair<std::string, std::string>;
             using Choices = std::pair<Choice, Choice>;
-            Choices choix = {{"Fichier", ""}, {"Dossier", ""}};
+            Choices choix = {{"Fichier", " "}, {"Dossier", " "}};
             popup = std::make_unique<Popup>(win, std::make_pair(9, 40), "Nouveau", choix, "", true, is_linux_console);
         }
 
@@ -538,11 +607,19 @@ void FileManager::draw_popups()
     if (copying) {
         if (!popup) {
             std::string label;
-            if (copy_mode == "c") {
-                label = "Copier et Coller " + std::filesystem::path(path_to_copy).filename().string() + " ici ?";
-            } else {
-                label = "Couper et Coller " + std::filesystem::path(path_to_copy).filename().string() + " ici ?";
+            switch (clipboard.mode) {
+                case ClipboardMode::Copy :
+                    label = "Copier et Coller " + std::filesystem::path(path_to_copy).filename().string() + " ici ?";
+                    break;
+
+                case ClipboardMode::Cut :
+                    label = "Couper et Coller " + std::filesystem::path(path_to_copy).filename().string() + " ici ?";
+                    break;
+
+                default :
+                    break;
             }
+
             using Choice = std::pair<std::string, std::string>;
             using Choices = std::pair<Choice, Choice>;
             Choices choix = {{"Oui", ""}, {"Non", ""}};
@@ -651,6 +728,17 @@ EntryDisplay FileManager::get_entry_display_info(std::string entry)
 
 void FileManager::handle_key(int key)
 {
+
+    // On gère pour la message box
+    if (msgbox) {
+        msgbox->handle_key(key);
+        if (msgbox->is_entered()) {
+            msgbox.reset();
+        }
+        // Tant qu'une messagebox est affichée, on ne propage pas la touche au FileManager
+        return;
+    }
+
     int rows, cols;
     getmaxyx(win, rows, cols);
     // Compute the number of visible rows inside this FileManager window
@@ -750,6 +838,7 @@ void FileManager::handle_key(int key)
 
         // --- Touche Entrée ---
         else if (key == KEY_ENTER || key == 10 || key == 13) {
+
             if (entries.empty()) return;
             std::string target = entries[selected];
 
@@ -806,11 +895,43 @@ void FileManager::handle_key(int key)
         }
 
         // --- Touche Page Down ---
+        // if (key == KEY_NPAGE) {
+        //     selected = std::min(static_cast<int>(entries.size()) - 1, selected + view_rows);
+        //     scroll_offset = std::min(
+        //         std::max(0, static_cast<int>(entries.size()) - view_rows),
+        //         selected - view_rows + 1
+        //     );
+        // }
+
+        // --- Touche Page Down ---
+        // if (key == KEY_NPAGE) {
+        //     int entry_count = static_cast<int>(entries.size());
+
+
+        //     if (entry_count == 0)
+        //         return;
+
+        //     selected = std::min(max_selected, selected + view_rows);
+
+        //     scroll_offset = std::clamp(
+        //         selected - view_rows + 1,
+        //         0,
+        //         std::max(0, entry_count - view_rows)
+        //     );
+        // }
+
+        // --- Touche Page Down ---
         if (key == KEY_NPAGE) {
-            selected = std::min(static_cast<int>(entries.size()) - 1, selected + view_rows);
-            scroll_offset = std::min(
-                std::max(0, static_cast<int>(entries.size()) - view_rows),
-                selected - view_rows + 1
+            int entry_count = static_cast<int>(entries.size());
+            if (entry_count == 0)
+                return;
+
+            selected = std::min(entry_count - 1, selected + view_rows);
+
+            scroll_offset = std::clamp(
+                selected - view_rows + 1,
+                0,
+                std::max(0, entry_count - view_rows)
             );
         }
 
@@ -850,24 +971,26 @@ void FileManager::handle_key(int key)
 
         // --- Touche c ---
         else if (key == static_cast<int>('c') && !editing_path) {
-            copy_mode = "c";
-            if (entries[selected] != "..") {
-                path_to_copy = (fs::path(cwd) / entries[selected]).string();
-            }
+            clipboard.mode = ClipboardMode::Copy;
         }
 
         // --- Touche x ---
         else if (key == static_cast<int>('x') && !editing_path) {
-            copy_mode = "x";
-            if (entries[selected] != "..") {
-                path_to_copy = (fs::path(cwd) / entries[selected]).string();
-            }
+            clipboard.mode = ClipboardMode::Cut;
         }
 
         // --- Touche v ---
         else if (key == static_cast<int>('v') && !editing_path) {
             if (!path_to_copy.empty()) {
                 copying = true;
+            }
+        }
+
+        // --- Touche Espace ---
+        else if (key == ' ' && !editing_path) {
+            if (entries[selected] != "..") {
+                path_to_copy = fs::path(cwd) / entries[selected];
+                clipboard.toggle(path_to_copy);
             }
         }
 
