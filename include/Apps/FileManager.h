@@ -8,7 +8,7 @@
 #include <filesystem>
 #include <memory>
 #include <unordered_set>
-#include "Engine/MessageBox.h"
+#include "Engine/Components/MessageBox.h"
 
 struct EntryDisplay {
     std::string icon;

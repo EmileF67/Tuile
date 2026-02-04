@@ -8,8 +8,8 @@
 #include <set>
 #include <unordered_set>
 
-#include "Engine/Cadre.h"
-#include "Engine/Popup.h"
+#include "Engine/Components/Cadre.h"
+#include "Engine/Components/Popup.h"
 
 
 // TODO

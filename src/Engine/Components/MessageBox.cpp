@@ -1,9 +1,9 @@
-#include "Engine/MessageBox.h"
+#include "Engine/Components/MessageBox.h"
 #include "ncurses.h"
 #include <vector>
 #include <sstream>
 #include <algorithm>
-#include "Engine/Cadre.h"
+#include "Engine/Components/Cadre.h"
 
 
 

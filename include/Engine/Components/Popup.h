@@ -4,7 +4,7 @@
 #include <ncurses.h>
 #include <string>
 #include <utility>
-#include "Engine/Input.h"
+#include "Engine/Components/Input.h"
 
 class Popup {
 private:
