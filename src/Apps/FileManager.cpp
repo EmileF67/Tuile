@@ -79,21 +79,35 @@ namespace fs = std::filesystem;
 // define destructor here so Popup is a complete type for destruction
 FileManager::~FileManager() = default;
 
+// HERE
+
 // --- Constructeur ---
-FileManager::FileManager(WINDOW* stdscr, std::pair<int,int> x_, std::pair<int,int> y_, const std::string& start_path_, bool display_size_, bool display_dotfiles_, bool is_linux_console_)
+FileManager::FileManager(
+    WINDOW* stdscr,
+    const std::string& start_path_,
+    bool display_size_,
+    bool display_dotfiles_,
+    bool is_linux_console_)
     : win(stdscr),
-      x(x_),
-      y(y_),
+      inner_top(0),
+      inner_left(0),
+      inner_bottom(0),
+      inner_right(0),
       start_path(start_path_),
       display_size(display_size_),
       display_dotfiles(display_dotfiles_),
-      is_linux_console(is_linux_console_)
+      is_linux_console(is_linux_console_),
+      // Essai
+      popup(nullptr),
+      msgbox(nullptr)
 {
     // On initialise chaque variable
     cwd             = start_path;       // Le chemin vers de dossier actuel
     path_input      = "";               // La chaine qui représente la recherche de l'utilisateur
     selected        = 0;                // L'indice de l'élément selectionné (entries)
     scroll_offset   = 0;                // Le scroll à ajouter lors de l'affichage des entrées
+
+    editing_path    = false;            // Permet de savoir si on est entrain de modifier le chemin actuel à la main
 
     input_new       = false;            // Si on veut le popup pour un nouvel élément
     nouveau         = 0;                // Le choix du type du nouvel élément
@@ -102,9 +116,8 @@ FileManager::FileManager(WINDOW* stdscr, std::pair<int,int> x_, std::pair<int,in
     remove_element  = false;            // Si on veut retirer un élément
     rename_element  = false;            // Si on veut renommer un élément
     new_rename      = "";               // Le nom donné pour renommer l'élément
-    // copying         = false;            // Si on est entrain de copier
-    // copy_mode       = "";               // Le type de copie
-    // path_to_copy    = "";               // Le chemin à copier
+    copying         = false;            // Si on est entrain de copier
+    path_to_copy    = "";               // Le chemin à copier
     editor          = "vim";            // L'éditeur défini par défaut
     popup.reset();                      // Va contenir toute instance de popup
     msgbox.reset();                     // Va contenir toute instance de MessageBox
@@ -112,7 +125,29 @@ FileManager::FileManager(WINDOW* stdscr, std::pair<int,int> x_, std::pair<int,in
     aSpace          = true;             // Si on veut un expace en plus après l'icône
     display_icons   = true;             // Si on affiche les icônes
     display_perms   = false;            // Si on affiche les permissions de chaque élément
-    Clipboard clipboard;                // Un instance du Clipboard
+    clipboard.clear();                  // Initialiser le clipboard
+
+    focused = false;
+}
+
+void FileManager::toggle_focus() {
+    focused = focused == false;
+}
+
+void FileManager::compute_inner_area(int& top, int& left, int& bottom, int& right)
+{
+    int rows, cols;
+    getmaxyx(win, rows, cols);
+
+    // Cadre interne : 1 caractère de marge
+    top    = 2;
+    left   = 1;
+    bottom = rows - 2;
+    right  = cols - 2;
+
+    // Sécurité
+    if (bottom < top) bottom = top;
+    if (right < left) right = left;
 }
 
 
@@ -406,32 +441,21 @@ std::string obtenir_permissions(const fs::path& p)
 void FileManager::draw()
 {
     // Déclaration & initialisation
-    int _, cols;
-    getmaxyx(win, _, cols);
+    int top, left, bottom, right;
+    compute_inner_area(top, left, bottom, right);
 
-    int x1 = x.first;
-    int y1 = x.second;
-    int x2 = y.first;
-    int y2 = y.second;
-
-    int h = x2 - x1;
-    int w = y2 - y1;
-
-    // Efface zone
-    for (int i = 0; i <= h; i++) {
-        mvwaddstr(win, x1 + i, y1, std::string(w, ' ').c_str());
-    }
+    werase(win); // PLUS SIMPLE ET SÛR
 
     // Affiche le principale du filemanager
     std::string display_text = "";
-    this->draw_header(x1, y1, x2, y2, &display_text);
+    this->draw_header(top, left, bottom, right, &display_text);
 
     // Afficher les entrées
-    this->draw_entries(x1, y1, x2, cols);
+    this->draw_entries(top, left, bottom, right);
 
     // Si l'on est entrain de modifier le chemin manuellement
     if (editing_path) {
-        wmove(win, x1, y1 + static_cast<int>(display_text.size()));
+        wmove(win, top, left + static_cast<int>(display_text.size()));
     }
 
     this->draw_popups();
@@ -451,12 +475,12 @@ void FileManager::draw_messagebox()
 }
 
 
-void FileManager::draw_header(int x1, int y1, int x2, int y2, std::string* display_text)
+void FileManager::draw_header(int top, int left, int bottom, int right, std::string* display_text)
 {
     // Cadre
-    Cadre cadre(win, {x1 - 1, y1 - 1}, {x2 + 1, y2 + 1}, is_linux_console);
+    Cadre cadre(win, {0, 0}, {bottom + 1, right + 1}, is_linux_console);
     cadre.draw();
-    cadre.sep(x1 + 1);
+    cadre.sep(top);
 
     // Afficher le chemin
     if (editing_path) {
@@ -468,10 +492,18 @@ void FileManager::draw_header(int x1, int y1, int x2, int y2, std::string* displ
     } else {
         *display_text = " " + cwd + " ";
     }
-    mvwaddstr(win, x1, y1, (*display_text).c_str());
+    mvwaddstr(win, top-1, left, (*display_text).c_str());
+
+    // Afficher le statut de focus
+    std::string star = " ";
+    if (focused) {
+        star = "*";
+    }
+
+    mvwaddstr(win, top-2, 0, star.c_str());
 }
 
-void FileManager::draw_entries(int x1, int y1, int x2, int cols)
+void FileManager::draw_entries(int top, int left, int bottom, int right)
 {
     // Déclaration
     int color = 0;
@@ -480,13 +512,24 @@ void FileManager::draw_entries(int x1, int y1, int x2, int cols)
     std::string entry;
     EntryDisplay details;
     size_t start = static_cast<size_t>(scroll_offset);
-    size_t end = std::min(entries.size(), start + static_cast<size_t>(x2-x1 - 1));
+    
+    int w = right - left + 1; // largeur interne
+
+    size_t end = std::min(
+        entries.size(),
+        start + static_cast<size_t>(bottom - top - 1)
+    );
+
     std::vector<std::string> visible_entries(entries.begin() + start, entries.begin() + end);
     
     for (std::size_t i = 0; i < visible_entries.size(); i++) {
         abs_idx = static_cast<int>(start + i);
         entry   = visible_entries[i];
         details = this->get_entry_display_info(entry);
+        
+        // Vérifier que la ligne ne dépasse pas la fenêtre
+        int current_row = top + 1 + static_cast<int>(i);
+        if (current_row > bottom) break;  // Arrêter si on dépasse la limite inférieure
 
         // On détermine si l'élément est sélectionné et on applique des changements en fonction
         std::string prefix = "";
@@ -515,7 +558,7 @@ void FileManager::draw_entries(int x1, int y1, int x2, int cols)
         color = details.color;
         std::string text = prefix + details.permissions + "    " + entry;
         wattron(win, COLOR_PAIR(color));
-        mvwaddstr(win, x1 + 2 + static_cast<int>(i), y1, text.c_str());
+        mvwaddstr(win, current_row, left, text.c_str());
         wattroff(win, COLOR_PAIR(color));
 
         // Déterminer le type d'affichage de l'icone et appliquer des changements
@@ -536,7 +579,7 @@ void FileManager::draw_entries(int x1, int y1, int x2, int cols)
 
         // Afficher l'icone
         wattron(win, COLOR_PAIR(color));
-        mvwaddstr(win, x1 + 2 + static_cast<int>(i), y1 + 3 + enPlus, icon.c_str());
+        mvwaddstr(win, current_row, left + 3 + enPlus, icon.c_str());
         wattroff(win, COLOR_PAIR(color));
 
         // Calculer couleur de l'affichage de la taille de l'élément
@@ -552,7 +595,7 @@ void FileManager::draw_entries(int x1, int y1, int x2, int cols)
 
         // Afficher taille de l'élément
         wattron(win, COLOR_PAIR(color));
-        mvwaddstr(win, x1 + 2 + static_cast<int>(i), y1 + cols - 10 - static_cast<int>(details.size.size()), details.size.c_str()); // TODO
+        mvwaddstr(win, current_row, left + w - 2 - static_cast<int>(details.size.size()), details.size.c_str());
         wattroff(win, COLOR_PAIR(color));
     }
 }
@@ -744,9 +787,11 @@ void FileManager::handle_key(int key)
     // Compute the number of visible rows inside this FileManager window
     // The draw() function uses (x2 - x1 - 1) as the number of visible entries,
     // so keep the same value here to keep scrolling logic consistent.
-    int x1 = x.first;
-    int x2 = y.first;
-    int view_rows = x2 - x1 - 1;
+    
+    int top, left, bottom, right;
+    compute_inner_area(top, left, bottom, right);
+    int view_rows = bottom - top - 1;
+
     if (view_rows <= 0) {
         // Fallback to terminal rows if the computed area is invalid
         view_rows = rows;

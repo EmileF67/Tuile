@@ -67,8 +67,13 @@ class Popup; // forward declaration
 class FileManager {
     private:
         WINDOW* win;
-        std::pair<int,int> x; // {row1, col1}
-        std::pair<int,int> y; // {row2, col2}
+
+        // NEW
+        int inner_top;
+        int inner_left;
+        int inner_bottom;
+        int inner_right;
+
         std::string start_path;
         bool display_size;
         bool display_dotfiles;
@@ -103,11 +108,13 @@ class FileManager {
         bool display_perms;
 
         Clipboard clipboard;
+        
+        bool focused;
 
 
     public:
         // Constructeur
-        FileManager(WINDOW* stdscr, std::pair<int,int> x_, std::pair<int,int> y_, const std::string& start_path_, bool display_size_, bool display_dotfiles_, bool is_linux_console_);
+        FileManager(WINDOW* stdscr, const std::string& start_path_, bool display_size_, bool display_dotfiles_, bool is_linux_console_);
 
         // Destructeur
         ~FileManager();
@@ -123,6 +130,9 @@ class FileManager {
 
         // Obtenir le cwd
         std::string get_cwd() { return cwd; };
+
+        // Permet de changer le statut de focus
+        void toggle_focus();
         
 
     private:
@@ -136,10 +146,10 @@ class FileManager {
         std::string human_readable_size(long long size);
 
         // Affiche les éléments principaux du filemanager
-        void draw_header(int x1, int y1, int x2, int y2, std::string* display_text);
+        void draw_header(int top, int left, int bottom, int right, std::string* display_text);
 
         // Affiche toutes les entrées qui sont visibles (en fonction du scroll)
-        void draw_entries(int x1, int y1, int x2, int cols);
+        void draw_entries(int top, int left, int bottom, int right);
 
         // Affiche les popups si existants
         void draw_popups();
@@ -149,6 +159,9 @@ class FileManager {
 
         // Renvoie les détails d'affichage d'une entrée
         EntryDisplay get_entry_display_info(std::string entry);
+        
+        // Calculer la zone interne NEW
+        void compute_inner_area(int& top, int& left, int& bottom, int& right);
 
 
 };
