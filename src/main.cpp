@@ -63,18 +63,18 @@ int main(int argc, char** argv) {
     if (argc > 1) start_path = argv[1];
 
     // Notre seul et unique Main Engine
-    std::unique_ptr<MainEngine> mEngine = std::make_unique<MainEngine>(stdscr);
+    std::unique_ptr<MainEngine> mEngine = std::make_unique<MainEngine>(stdscr, is_linux_console);
 
     // On créer nos deux fenêtres
     WINDOW* win1 = mEngine->new_window("FileManager1");
     WINDOW* win2 = mEngine->new_window("FileManager2");
 
     // On créer notre FileManager n°1 avec les coordonnées relatives à sa fenêtre
-    FileManager fm1(win1, start_path, true, false, is_linux_console);
+    FileManager fm1(win1, *mEngine, start_path, true, false, is_linux_console);
     fm1.refresh_entries();
 
     // On créer notre FileManager n°2 avec les coordonnées relatives à sa fenêtre
-    FileManager fm2(win2, start_path, true, false, is_linux_console);
+    FileManager fm2(win2, *mEngine, start_path, true, false, is_linux_console);
     fm2.refresh_entries();
 
     // On met le focus sur la fenêtre n°1
@@ -146,47 +146,47 @@ int main(int argc, char** argv) {
             if (mEngine->detect_resizing()) {
                 fm1.draw();
                 fm2.draw();
+                mEngine->draw_popup();
                 mEngine->refresh_all_and_update();
             }
 
         }
         
         if (ch != ERR) {
-            // forward key to FileManager
-
-            if (ch == 'a') {
+            // Gérer le changement de focus
+            if (ch == 'a' && !mEngine->has_active_popup()) {
                 if (focus != 1) {
                     fm1.toggle_focus();
                     fm2.toggle_focus();
                     focus = 1;
-                    fm2.draw();
                 }
-            } else if (ch == 'p') {
+            } else if (ch == 'p' && !mEngine->has_active_popup()) {
                 if (focus != 2) {
                     fm1.toggle_focus();
                     fm2.toggle_focus();
                     focus = 2;
-                    fm1.draw();
+                }
+            } else {
+                // Les FileManagers gèrent les popups eux-mêmes
+                switch (focus) {
+                    case 1:
+                        fm1.handle_key(ch);
+                        break;
+
+                    case 2:
+                        fm2.handle_key(ch);
+                        break;
                 }
             }
 
-            switch (focus) {
-                case 1:
-                    fm1.handle_key(ch);
-                    fm1.draw();
-                    break;
+            // Redessiner les deux filemanagers
+            fm1.draw();
+            fm2.draw();
 
-                case 2:
-                    fm2.handle_key(ch);
-                    fm2.draw();
-                    break;
-            }
+            // Afficher le popup (s'il existe)
+            mEngine->draw_popup();
 
             mEngine->refresh_all_and_update();
-            
-            // fm->handle_key(ch);
-            // fm->draw();
-            // refresh();
         }
     }
 

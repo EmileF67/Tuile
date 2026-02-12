@@ -9,11 +9,12 @@
 #include <unordered_set>
 
 #include "Engine/Components/Cadre.h"
-#include "Engine/Components/Popup.h"
+#include "Engine/MainEngine.h"
 
 
 // TODO
 // compatibilité git (raccourcis pour clone, commit, ect....) ??
+// Touches vim pour se déplacer ??
 
 // ==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==
 
@@ -84,11 +85,13 @@ FileManager::~FileManager() = default;
 // --- Constructeur ---
 FileManager::FileManager(
     WINDOW* stdscr,
+    MainEngine& mEngine_,
     const std::string& start_path_,
     bool display_size_,
     bool display_dotfiles_,
     bool is_linux_console_)
-    : win(stdscr),
+    : mEngine(mEngine_),
+      win(stdscr),
       inner_top(0),
       inner_left(0),
       inner_bottom(0),
@@ -97,8 +100,6 @@ FileManager::FileManager(
       display_size(display_size_),
       display_dotfiles(display_dotfiles_),
       is_linux_console(is_linux_console_),
-      // Essai
-      popup(nullptr),
       msgbox(nullptr)
 {
     // On initialise chaque variable
@@ -119,7 +120,6 @@ FileManager::FileManager(
     copying         = false;            // Si on est entrain de copier
     path_to_copy    = "";               // Le chemin à copier
     editor          = "vim";            // L'éditeur défini par défaut
-    popup.reset();                      // Va contenir toute instance de popup
     msgbox.reset();                     // Va contenir toute instance de MessageBox
     cursor_on       = false;            // Si le curseur est activé ou non
     aSpace          = true;             // Si on veut un expace en plus après l'icône
@@ -127,7 +127,7 @@ FileManager::FileManager(
     display_perms   = false;            // Si on affiche les permissions de chaque élément
     clipboard.clear();                  // Initialiser le clipboard
 
-    focused = false;
+    focused = false;                    // Si l'instance du filemanager est celle qui est focus en ce moment (affichage *)
 }
 
 void FileManager::toggle_focus() {
@@ -602,53 +602,54 @@ void FileManager::draw_entries(int top, int left, int bottom, int right)
 
 void FileManager::draw_popups()
 {
+    // Créer les popups si nécessaire via MainEngine
+    // (Les affichages et les touches sont gérées par MainEngine)
+    
     // Si l'on est entrain de faire un choix pour un nouvel élément
     if (input_new) {
-        if (!popup) {
+        if (!mEngine.has_active_popup()) {  // Pas de popup actif, en créer un
             using Choice = std::pair<std::string, std::string>;
             using Choices = std::pair<Choice, Choice>;
-            Choices choix = {{"Fichier", " "}, {"Dossier", " "}};
-            popup = std::make_unique<Popup>(win, std::make_pair(9, 40), "Nouveau", choix, "", true, is_linux_console);
+            Choices choix = {{"🗋 ", "Fichier"}, {"🖿 ", "Dossier"}};
+            mEngine.create_double_choices_popup("Créer un nouveau fichier ou dossier ?", choix);
         }
-
-        popup->draw();
     }
 
     // Si l'on est entrain de définir le nom du nouvel élément
     if (input_new_name) {
-        if (popup) popup->draw();
+        if (!mEngine.has_active_popup()) {
+            std::string label = (nouveau == 0) ? "Nouveau fichier" : "Nouveau dossier";
+            mEngine.create_input_popup(label);
+        }
     }
 
     // Si l'on est entrain de retirer un élément
     if (remove_element) {
-        if (!popup) {
+        if (!mEngine.has_active_popup()) {
             std::string label;
             if (cwd == "/home/emile/.Corbeille") {
-                label = "Supprimer " + entries[selected] + " définitivement";
+                label = "Supprimer " + entries[selected] + " définitivement ?";
             } else {
-                label = std::string("Déplacer ") + entries[selected] + " dans la Corbeille";
+                label = std::string("Déplacer ") + entries[selected] + " dans la Corbeille ?";
             }
             using Choice = std::pair<std::string, std::string>;
             using Choices = std::pair<Choice, Choice>;
-            Choices choix = {{"Oui", ""}, {"Non", ""}};
-            popup = std::make_unique<Popup>(win, std::make_pair(9, 90), label, choix, "", true, is_linux_console);
-            // default selected to 1 (second option)
+            Choices choix = {{"✓ ", "Oui"}, {"x", "Non"}};
+            mEngine.create_double_choices_popup(label, choix);
         }
-        if (popup) popup->draw();
     }
 
     // Si l'on est entrain de renommer un élément
     if (rename_element) {
-        if (!popup) {
+        if (!mEngine.has_active_popup()) {
             std::string label = "Renommer " + entries[selected];
-            popup = std::make_unique<Popup>(win, std::make_pair(9, 50), label, std::make_pair(std::make_pair(std::string(), std::string()), std::make_pair(std::string(), std::string())), "Nouveau nom :", true, is_linux_console);
+            mEngine.create_input_popup(label);
         }
-        if (popup) popup->draw();
     }
 
-    // Si l'on est entrain de copier/couper un élément TODO
+    // Si l'on est entrain de copier/couter un élément
     if (copying) {
-        if (!popup) {
+        if (!mEngine.has_active_popup()) {
             std::string label;
             switch (clipboard.mode) {
                 case ClipboardMode::Copy :
@@ -665,10 +666,9 @@ void FileManager::draw_popups()
 
             using Choice = std::pair<std::string, std::string>;
             using Choices = std::pair<Choice, Choice>;
-            Choices choix = {{"Oui", ""}, {"Non", ""}};
-            popup = std::make_unique<Popup>(win, std::make_pair(9, 90), label, choix, "", true, is_linux_console);
+            Choices choix = {{"✓ ", "Oui"}, {"x", "Non"}};
+            mEngine.create_double_choices_popup(label, choix);
         }
-        if (popup) popup->draw();
     }
 }
 
@@ -780,6 +780,16 @@ void FileManager::handle_key(int key)
         }
         // Tant qu'une messagebox est affichée, on ne propage pas la touche au FileManager
         return;
+    }
+
+    // Gérer les popups si un popup est actuellement affichable
+    if (mEngine.has_active_popup()) {
+        mEngine.global_handle_key(key);
+        // Si le popup n'est pas terminé, bloquer les autres touches
+        if (!mEngine.is_popup_done()) {
+            return;
+        }
+        // Si le popup est terminé, on continue pour traiter la transition d'état
     }
 
     int rows, cols;
@@ -940,32 +950,6 @@ void FileManager::handle_key(int key)
         }
 
         // --- Touche Page Down ---
-        // if (key == KEY_NPAGE) {
-        //     selected = std::min(static_cast<int>(entries.size()) - 1, selected + view_rows);
-        //     scroll_offset = std::min(
-        //         std::max(0, static_cast<int>(entries.size()) - view_rows),
-        //         selected - view_rows + 1
-        //     );
-        // }
-
-        // --- Touche Page Down ---
-        // if (key == KEY_NPAGE) {
-        //     int entry_count = static_cast<int>(entries.size());
-
-
-        //     if (entry_count == 0)
-        //         return;
-
-        //     selected = std::min(max_selected, selected + view_rows);
-
-        //     scroll_offset = std::clamp(
-        //         selected - view_rows + 1,
-        //         0,
-        //         std::max(0, entry_count - view_rows)
-        //     );
-        // }
-
-        // --- Touche Page Down ---
         if (key == KEY_NPAGE) {
             int entry_count = static_cast<int>(entries.size());
             if (entry_count == 0)
@@ -1047,87 +1031,82 @@ void FileManager::handle_key(int key)
 
             // Choix de la nature du nouvel élément 
             if (input_new) {
-                if (popup) {
-                    nouveau = popup->get_selected();
-                } else {
-                    nouveau = 0;
-                }
+                if (mEngine.is_popup_done()) {
+                    nouveau = mEngine.get_double_choices_popup_value();
 
-                if (nouveau == 0) {             // Fichier
-                    using Choice = std::pair<std::string, std::string>;
-                    popup = std::make_unique<Popup>(win, std::make_pair(9, 40), "Nouveau fichier ", std::make_pair(Choice{}, Choice{}), "Nom :", true, is_linux_console);
-                } else if (nouveau == 1) {      // Dossier
-                    using Choice = std::pair<std::string, std::string>;
-                    popup = std::make_unique<Popup>(win, std::make_pair(9, 40), "Nouveau dossier ", std::make_pair(Choice{}, Choice{}), "Nom :", true, is_linux_console);
+                    mEngine.reset_popups();
+                    input_new = false;
+                    input_new_name = true;
                 }
-
-                input_new = false;
-                input_new_name = true;
             }
 
             // Choix du nom du nouvel élément
             else if (input_new_name) {
-                if (popup) new_name = popup->get_text();
+                if (mEngine.is_popup_done()) {
+                    new_name = mEngine.get_input_popup_value();
 
-                if (nouveau == 0) {
-                    std::ofstream file(fs::path(cwd) / new_name, std::ios::out);
-                    file << "";
-                    file.close();
-                } else if (nouveau == 1) {
-                    fs::create_directory(fs::path(cwd) / new_name);
+                    if (nouveau == 0) {
+                        std::ofstream file(fs::path(cwd) / new_name, std::ios::out);
+                        file << "";
+                        file.close();
+                    } else if (nouveau == 1) {
+                        fs::create_directory(fs::path(cwd) / new_name);
+                    }
+
+                    mEngine.reset_popups();
+                    input_new_name = false;
+
+                    refresh_entries();
                 }
-
-                popup.reset();
-                input_new_name = false;
-
-                refresh_entries();
             }
 
             // Suppression d'un élément
             else if (remove_element) {
-                if (popup && popup->get_selected() == 0) {
-                    if (std::string((fs::path(cwd) / entries[selected]).string()).find("/home/emile/.Corbeille") == std::string::npos) {
-                        fs::rename(fs::path(cwd) / entries[selected], fs::path("/home/emile/.Corbeille") / entries[selected]);
-                    } else {
-                        try {
-                            fs::remove_all(fs::path(cwd) / entries[selected]);
-                        } catch (const fs::filesystem_error&) {
-                            if (fs::is_regular_file(fs::path(cwd) / entries[selected])) {
-                                fs::remove(fs::path(cwd) / entries[selected]);
+                if (mEngine.is_popup_done()) {
+                    if (mEngine.get_double_choices_popup_value() == 0) {
+                        if (std::string((fs::path(cwd) / entries[selected]).string()).find("/home/emile/.Corbeille") == std::string::npos) {
+                            fs::rename(fs::path(cwd) / entries[selected], fs::path("/home/emile/.Corbeille") / entries[selected]);
+                        } else {
+                            try {
+                                fs::remove_all(fs::path(cwd) / entries[selected]);
+                            } catch (const fs::filesystem_error&) {
+                                if (fs::is_regular_file(fs::path(cwd) / entries[selected])) {
+                                    fs::remove(fs::path(cwd) / entries[selected]);
+                                }
                             }
                         }
                     }
+
+                    mEngine.reset_popups();
+                    remove_element = false;
+
+                    refresh_entries();
                 }
-
-                popup.reset();
-                remove_element = false;
-
-                refresh_entries();
             }
 
             // Renommage d'un élément
             else if (rename_element) {
+                if (mEngine.is_popup_done()) {
+                    new_rename = mEngine.get_input_popup_value();
+                    std::filesystem::rename(fs::path(cwd) / entries[selected], fs::path(cwd) / new_rename);
 
-                if (popup) new_rename = popup->get_text();
-                std::filesystem::rename(fs::path(cwd) / entries[selected], fs::path(cwd) / new_rename);
+                    mEngine.reset_popups();
+                    rename_element = false;
 
-                popup.reset();
-                rename_element = false;
-
-                refresh_entries();
+                    refresh_entries();
+                }
             }
 
             else if (copying) {
-                copy_to_path();
-                path_to_copy.clear();
-                copying = false;
-                popup.reset();
+                if (mEngine.is_popup_done()) {
+                    copy_to_path();
+                    path_to_copy.clear();
+                    mEngine.reset_popups();
+                    copying = false;
 
-                refresh_entries();
+                    refresh_entries();
+                }
             }
-        }
-        if (popup) {
-            popup->handle_key(key);
         }
     }
 }

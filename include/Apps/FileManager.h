@@ -9,6 +9,7 @@
 #include <memory>
 #include <unordered_set>
 #include "Engine/Components/MessageBox.h"
+#include "Engine/MainEngine.h"
 
 struct EntryDisplay {
     std::string icon;
@@ -62,9 +63,11 @@ struct Clipboard {
     }
 };
 
-class Popup; // forward declaration
+class MainEngine; // forward declaration
 
 class FileManager {
+    private:
+        MainEngine& mEngine; // Référence à MainEngine pour gérer les popups
     private:
         WINDOW* win;
 
@@ -100,7 +103,6 @@ class FileManager {
         std::string copy_mode;
         std::string path_to_copy;
         std::string editor;
-        std::unique_ptr<Popup> popup;
         std::unique_ptr<MessageBox> msgbox;
         bool cursor_on;
         bool aSpace;
@@ -114,7 +116,7 @@ class FileManager {
 
     public:
         // Constructeur
-        FileManager(WINDOW* stdscr, const std::string& start_path_, bool display_size_, bool display_dotfiles_, bool is_linux_console_);
+        FileManager(WINDOW* stdscr, MainEngine& mEngine_, const std::string& start_path_, bool display_size_, bool display_dotfiles_, bool is_linux_console_);
 
         // Destructeur
         ~FileManager();
