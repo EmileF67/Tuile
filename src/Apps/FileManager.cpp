@@ -128,6 +128,10 @@ FileManager::FileManager(
     clipboard.clear();                  // Initialiser le clipboard
 
     focused = false;                    // Si l'instance du filemanager est celle qui est focus en ce moment (affichage *)
+
+    // Pour le placement du curseur
+    top_curseur = 0;
+    left_curseur = 0;
 }
 
 void FileManager::toggle_focus() {
@@ -437,6 +441,13 @@ std::string obtenir_permissions(const fs::path& p)
     return tempperm;
 }
 
+void FileManager::place_cursor()
+{
+    if (editing_path) {
+        wmove(win, this->top_curseur, this->left_curseur);
+    }
+}
+
 
 void FileManager::draw()
 {
@@ -453,10 +464,11 @@ void FileManager::draw()
     // Afficher les entrées
     this->draw_entries(top, left, bottom, right);
 
+    this->top_curseur = top-1;
+    this->left_curseur = left + static_cast<int>(display_text.size());
+
     // Si l'on est entrain de modifier le chemin manuellement
-    if (editing_path) {
-        wmove(win, top, left + static_cast<int>(display_text.size()));
-    }
+    this->place_cursor();
 
     this->draw_popups();
 

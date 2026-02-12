@@ -113,6 +113,10 @@ class FileManager {
         
         bool focused;
 
+        // Coos curseur
+        int top_curseur;
+        int left_curseur;
+
 
     public:
         // Constructeur
@@ -133,11 +137,17 @@ class FileManager {
         // Obtenir le cwd
         std::string get_cwd() { return cwd; };
 
+        // Obtenir la fenêtre
+        WINDOW* get_win() { return win; };
+
         // Savoir si on est entrain d'éditer le chemin à la main
         bool is_editing_path() { return editing_path; };
 
         // Permet de changer le statut de focus
         void toggle_focus();
+
+        // Place le curseur dans le cas où on est entrain d'éditer le chemin à la main
+        void place_cursor();
         
 
     private:

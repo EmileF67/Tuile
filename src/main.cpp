@@ -150,9 +150,7 @@ int main(int argc, char** argv) {
                 mEngine->refresh_all_and_update();
             }
 
-        }
-        
-        if (ch != ERR) {
+        } else if (ch != ERR) {
             // Gérer le changement de focus
             if (ch == 'a' && !mEngine->has_active_popup() && !fm1.is_editing_path() && !fm2.is_editing_path()) {
                 if (focus != 1) {
@@ -187,6 +185,22 @@ int main(int argc, char** argv) {
             mEngine->draw_popup();
 
             mEngine->refresh_all_and_update();
+
+        } else if (fm1.is_editing_path() || fm2.is_editing_path()) {
+            // Redessiner si on est en train d'éditer le chemin, même sans input
+            fm1.draw();
+            fm2.draw();
+            mEngine->draw_popup();
+            mEngine->refresh_all_and_update();
+        }
+
+        // Placer le curseur après chaque redessinage (surtout important pour editing_path)
+        if (fm1.is_editing_path()) {
+            fm1.place_cursor();
+            wrefresh(fm1.get_win());
+        } else if (fm2.is_editing_path()) {
+            fm2.place_cursor();
+            wrefresh(fm2.get_win());
         }
     }
 
