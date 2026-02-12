@@ -121,7 +121,7 @@ PopupInputText::PopupInputText(WINDOW* stdscr_, std::string label_, bool is_linu
     :
     Popup(stdscr_, "Demande de texte", label_, is_linux_console_)
 {
-    input = std::make_unique<Input>(win, 6, 2, width - 4);
+    input = std::make_unique<Input>(win, 6, 2, width - 4, true);
 }
 
 PopupInputText::~PopupInputText() = default;

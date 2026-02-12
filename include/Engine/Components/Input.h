@@ -27,10 +27,16 @@ class Input {
         void handle_key(int key);
 
         // Accesseur : savoir si entrée validée
-        bool is_entered() const { return entered; }
+        bool is_entered() const { return entered; };
 
         // Récupérer le texte entré
-        std::string get_text() const { return input_text; }
+        std::string get_text() const { return input_text; };
+
+        // Définir le texte entré
+        void set_text(std::string texte) { 
+            input_text = texte.substr(0, length-1);
+            cursor_pos = static_cast<int>(input_text.size());
+        };
 };
 
 #endif // INPUT_H

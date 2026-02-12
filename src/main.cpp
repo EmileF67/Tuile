@@ -154,13 +154,13 @@ int main(int argc, char** argv) {
         
         if (ch != ERR) {
             // Gérer le changement de focus
-            if (ch == 'a' && !mEngine->has_active_popup()) {
+            if (ch == 'a' && !mEngine->has_active_popup() && !fm1.is_editing_path() && !fm2.is_editing_path()) {
                 if (focus != 1) {
                     fm1.toggle_focus();
                     fm2.toggle_focus();
                     focus = 1;
                 }
-            } else if (ch == 'p' && !mEngine->has_active_popup()) {
+            } else if (ch == 'p' && !mEngine->has_active_popup() && !fm1.is_editing_path() && !fm2.is_editing_path()) {
                 if (focus != 2) {
                     fm1.toggle_focus();
                     fm2.toggle_focus();

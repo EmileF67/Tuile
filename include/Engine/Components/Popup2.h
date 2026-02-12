@@ -105,8 +105,11 @@ class PopupInputText : public Popup {
         // Destructeur
         ~PopupInputText();
 
-        // Permet de récupéré le texte entré
+        // Permet de récupérer le texte entré
         std::string get_text() { return input->get_text(); };
+
+        // Permet de récupérer l'input (retourne un pointeur brut vers l'input détenu)
+        Input* get_input() { return input.get(); };
 
         // Afficher les particularitées de ce type de popup
         void draw();
@@ -133,6 +136,12 @@ class PopupDoubleChoices : public Popup {
 
         // Permet d'obtenir l'indice du choix séléctionné
         short get_selected() { return selected; };
+
+        // Permet de définir l'indice du choix séléctionné
+        void set_selected(short indice) { selected = indice; };
+
+        // Permet de lire les choix du popup
+        Choices get_choices() { return choices; };
 
         // Afficher les particularitées de ce type de popup
         void draw();

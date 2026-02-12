@@ -75,6 +75,45 @@ void MainEngine::update_layout()
         mvwin(windows[i], new_y, new_x);
         werase(windows[i]);
     }
+
+    if (popup_type != PopupType::None) {
+        switch (popup_type) {
+            case PopupType::Info : {
+                this->popup_info = std::make_unique<PopupInfo>(
+                    stdscr,
+                    popup_info->label,
+                    is_linux_console
+                );
+                break;
+            }
+    
+            case PopupType::InputText : {
+                std::string old_text = popup_input_text->get_text();
+                this->popup_input_text = std::make_unique<PopupInputText>(
+                    stdscr,
+                    popup_input_text->label,
+                    is_linux_console
+                );
+                popup_input_text->get_input()->set_text(old_text);
+                break;
+            }
+    
+            case PopupType::DoubleChoices : {
+                short old_indice = popup_double_choices->get_selected();
+                this->popup_double_choices = std::make_unique<PopupDoubleChoices>(
+                    stdscr,
+                    popup_double_choices->label,
+                    popup_double_choices->get_choices(),
+                    is_linux_console
+                );
+                popup_double_choices->set_selected(old_indice);
+                break;
+            }
+    
+            default :
+                break;
+        }
+    }
 }
 
 void MainEngine::refresh_all_and_update()

@@ -35,6 +35,7 @@ void Input::draw() {
     }
 
     // Place le curseur juste après le texte
+    curs_set(1);
     wmove(win, x, y + cursor_pos);
 }
 

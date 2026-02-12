@@ -133,6 +133,9 @@ class FileManager {
         // Obtenir le cwd
         std::string get_cwd() { return cwd; };
 
+        // Savoir si on est entrain d'éditer le chemin à la main
+        bool is_editing_path() { return editing_path; };
+
         // Permet de changer le statut de focus
         void toggle_focus();
         
