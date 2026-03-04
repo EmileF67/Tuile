@@ -15,6 +15,7 @@
 // TODO
 // compatibilité git (raccourcis pour clone, commit, ect....) ??
 // Touches vim pour se déplacer ??
+// Remplacer le editing path actuel par un Input()
 
 // ==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==
 
@@ -492,7 +493,7 @@ void FileManager::draw_header(int top, int left, int bottom, int right, std::str
     // Cadre
     Cadre cadre(win, {0, 0}, {bottom + 1, right + 1}, is_linux_console);
     cadre.draw();
-    cadre.sep(top);
+    cadre.cut_horizontal(top);
 
     // Afficher le chemin
     if (editing_path) {
@@ -512,7 +513,9 @@ void FileManager::draw_header(int top, int left, int bottom, int right, std::str
         star = "*";
     }
 
-    mvwaddstr(win, top-2, 0, star.c_str());
+    wattron(win, COLOR_PAIR(4));
+    mvwaddstr(win, 1, 1, star.c_str());
+    wattroff(win, COLOR_PAIR(4));
 }
 
 void FileManager::draw_entries(int top, int left, int bottom, int right)

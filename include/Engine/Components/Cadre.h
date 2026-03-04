@@ -15,9 +15,11 @@ class Cadre {
         short color;
 
     public:
+        Cadre();
         Cadre(WINDOW* stdscr, std::pair<int,int> x_, std::pair<int,int> y_, bool is_linux_console_);
         void draw();
-        void sep(int row);
+        void cut_horizontal(int row);
+        void cut_vertical(int col);
 
 };
 

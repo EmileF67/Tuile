@@ -14,10 +14,6 @@
 #include <signal.h>
 #include <atomic>
 
-// TODO ULTIME
-// QUAND ON VEUT AFFICHER QUELQUE CHOSE, ON MODIFIE UN TABLEAU DEUX DIMENSIONS DE CARACTERES QUI REPRESENTE LE TERMINAL
-// ON LE COMPARE AVEC LE PRECEDENT QUAND ON AFFICHE POUR SAVOIR QUOI AFFICHER ET ON LE FAIT EN UNE FOIS POUR EVITER DE SURCHARGER LE CPU
-
 std::atomic<bool> stop(false);
 
 void handle_sigint(int) {
@@ -85,6 +81,9 @@ int main(int argc, char** argv) {
     fm1.draw();
     fm2.draw();
 
+    // On affiche la barre
+    mEngine->draw_bar();
+
     // On refresh le tout et on update l'affichage
     mEngine->refresh_all_and_update();
 
@@ -113,8 +112,8 @@ int main(int argc, char** argv) {
     // std::unique_ptr<FileManager> fm = make_fm(rows, cols, start_path);
     // fm->refresh_entries();
 
-    std::string text = "Change focus :      left -> press <a>      right -> press <b>      Ctrl + C -> stop process";
-    mvwaddstr(stdscr, 0, 0, text.c_str());
+    // std::string text = "Change focus :      left -> press <a>      right -> press <b>      Ctrl + C -> stop process";
+    // mvwaddstr(stdscr, 0, 0, text.c_str());
 
     bool running = true;
     while (running && !stop) {
@@ -146,6 +145,7 @@ int main(int argc, char** argv) {
             if (mEngine->detect_resizing()) {
                 fm1.draw();
                 fm2.draw();
+                mEngine->draw_bar();
                 mEngine->draw_popup();
                 mEngine->refresh_all_and_update();
             }
@@ -181,6 +181,9 @@ int main(int argc, char** argv) {
             fm1.draw();
             fm2.draw();
 
+            // Afficher la barre
+            mEngine->draw_bar();
+
             // Afficher le popup (s'il existe)
             mEngine->draw_popup();
 
@@ -190,7 +193,12 @@ int main(int argc, char** argv) {
             // Redessiner si on est en train d'éditer le chemin, même sans input
             fm1.draw();
             fm2.draw();
+            mEngine->draw_bar();
             mEngine->draw_popup();
+            mEngine->refresh_all_and_update();
+        } else {
+            // Timeout du getch - redessiner pour les modules dynamiques (DateTime etc)
+            mEngine->draw_bar();
             mEngine->refresh_all_and_update();
         }
 

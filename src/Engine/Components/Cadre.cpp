@@ -14,6 +14,16 @@ static std::string repeatUtf8(const std::string& s, int n) {
 
 
 // --------- Classe Cadre ---------
+ // Constructeur par défaut
+Cadre::Cadre()
+    : win(nullptr),
+      x({0, 0}),
+      y({0, 0}),
+      is_linux_console(false),
+      color(0)
+{
+}
+
  // Affiche un cadre avec pour coordonnées x le coin haut gauche et y le coin bas droite.
 Cadre::Cadre(WINDOW* stdscr, std::pair<int,int> x_, std::pair<int,int> y_, bool is_linux_console_)
     : win(stdscr),
@@ -69,7 +79,7 @@ void Cadre::draw() {
 // --- Méthode sep() ---
  // Ajoute une déparation à l'orizontale à l'arrache.
  // row est défini par rapport à la taille totale du terminal et pas par rapport aux coordonées du cadre.
-void Cadre::sep(int row) {
+void Cadre::cut_horizontal(int row) {
     int inner = y.second - x.second - 2;
     if (inner < 0) return;
     std::string line = std::string(u8"├") + repeatUtf8(u8"─", inner) + std::string(u8"┤");
@@ -77,6 +87,31 @@ void Cadre::sep(int row) {
     mvwaddstr(win, row, x.second, line.c_str());
     wattroff(win, COLOR_PAIR(color));
 }
+
+
+
+
+void Cadre::cut_vertical(int col) {
+    int height = y.first - x.first;
+    if (height < 1) return;
+    wattron(win, COLOR_PAIR(color));
+
+    // Top
+    mvwaddstr(win, x.first, col, u8"┬");
+
+    // Inner vertical segment (draw every row between top and bottom)
+    for (int r = x.first + 1; r < y.first; ++r) {
+        mvwaddstr(win, r, col, u8"│");
+    }
+
+    // Bottom
+    mvwaddstr(win, y.first, col, u8"┴");
+
+    wattroff(win, COLOR_PAIR(color));
+}
+
+
+
 
 // ---------- Fin Classe Cadre ---------
 

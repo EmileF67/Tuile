@@ -40,7 +40,7 @@ Popup::Popup(WINDOW* stdscr_, std::string titre_, std::string label_, bool is_li
         std::make_pair(height-1, width-1),
         is_linux_console
     );
-    cadre->sep(2);
+    cadre->cut_horizontal(2);
 }
 
 

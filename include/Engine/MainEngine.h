@@ -2,6 +2,7 @@
 #define MAINENGINE_H
 
 #include "Engine/Components/Popup2.h"
+#include "Apps/Bar.h"
 #include <ncurses.h>
 #include <string>
 #include <vector>
@@ -24,7 +25,7 @@ class MainEngine {
         int rows;
         int cols;
 
-        bool bar;
+        bool display_bar;
 
         // Type actuel du popup, None si aucun
         PopupType popup_type;
@@ -33,6 +34,9 @@ class MainEngine {
         std::unique_ptr<PopupInfo> popup_info;
         std::unique_ptr<PopupInputText> popup_input_text;
         std::unique_ptr<PopupDoubleChoices> popup_double_choices;
+
+        // La barre
+        std::unique_ptr<Bar> bar;
 
         void update_layout();
 
@@ -74,6 +78,9 @@ class MainEngine {
 
         // Permet d'afficher le popup actuel s'il y en a un
         void draw_popup();
+
+        // Dessine la barre
+        void draw_bar();
 
         // Permet de remettre à 0 les status de popup
         void reset_popups();

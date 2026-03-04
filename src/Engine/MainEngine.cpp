@@ -1,12 +1,27 @@
 #include "Engine/MainEngine.h"
+#include "Apps/BarComponents/DateTime.h"
 #include <ncurses.h>
 
 #define MAX_DISPLAYED_WINDOWS 2
 
 MainEngine::MainEngine(WINDOW* stdscr_, bool is_linux_console_)
-    : stdscr(stdscr_), is_linux_console(is_linux_console_), rows(0), cols(0), bar(true), popup_type(PopupType::None)
+    : stdscr(stdscr_), is_linux_console(is_linux_console_), rows(0), cols(0), display_bar(true), popup_type(PopupType::None)
 {
     getmaxyx(stdscr, rows, cols);
+
+    if (display_bar) {
+        bar = std::make_unique<Bar>(stdscr_);
+        
+        std::unique_ptr<DateTime> dt = std::make_unique<DateTime>(DrawType::DateTime);
+        bar->ajout_module(std::move(dt), BarArea::Middle);
+
+        std::unique_ptr<DateTime> dt2 = std::make_unique<DateTime>(DrawType::Time);
+        bar->ajout_module(std::move(dt2), BarArea::Middle);
+
+        std::unique_ptr<DateTime> dt3 = std::make_unique<DateTime>(DrawType::Date);
+        bar->ajout_module(std::move(dt3), BarArea::Middle);
+    }
+
 }
 
 MainEngine::~MainEngine() {
@@ -28,14 +43,15 @@ WINDOW* MainEngine::new_window(const std::string& name)
     int y = 0;
     int x = 0;
 
+    // [TODO] Diviser par windows.size()+1 pour répartir la taille équitablement
     if (windows.size() == 1) {
         w = cols / 2;
         x = cols / 2;
     }
 
-    if (bar) {
-        h -= 2;
-        y += 2;
+    if (display_bar) {
+        h -= 3;
+        y += 3;
     }
 
     WINDOW* win = newwin(h, w, y, x);
@@ -66,9 +82,9 @@ void MainEngine::update_layout()
             new_x = (i == 0) ? 0 : cols / 2;
         }
 
-        if (bar) {
-            new_h -= 2;
-            new_y += 2;
+        if (display_bar) {
+            new_h -= 3;
+            new_y += 3;
         }
 
         wresize(windows[i], new_h, new_w);
@@ -124,6 +140,11 @@ void MainEngine::refresh_all_and_update()
     // On met à jour chaque fenêtre d'apps
     for (WINDOW* win : windows) {
         wnoutrefresh(win);
+    }
+
+    // On met à jour la barre
+    if (display_bar) {
+        wnoutrefresh(bar->get_win());
     }
 
     // On met à jour le popup en dernier
@@ -213,6 +234,14 @@ void MainEngine::draw_popup()
 
         default :
             break;
+    }
+}
+
+
+void MainEngine::draw_bar()
+{
+    if (bar) {
+        bar->draw();
     }
 }
 
