@@ -50,8 +50,9 @@ class MainEngine {
 
         bool detect_resizing();
 
-
         bool global_handle_key(int key);
+
+        void load_bar_modules(WINDOW* stdscr);
 
         // $==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==-==
         // $ Popups 

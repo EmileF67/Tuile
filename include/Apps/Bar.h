@@ -36,7 +36,7 @@ class Bar {
 
     public:
         // Constructeur
-        Bar(WINDOW* stdscr_);
+        Bar(WINDOW* stdscr_, bool is_linux_console_);
 
         // Destructeur
         ~Bar();

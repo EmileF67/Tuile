@@ -10,16 +10,7 @@ MainEngine::MainEngine(WINDOW* stdscr_, bool is_linux_console_)
     getmaxyx(stdscr, rows, cols);
 
     if (display_bar) {
-        bar = std::make_unique<Bar>(stdscr_);
-        
-        std::unique_ptr<DateTime> dt = std::make_unique<DateTime>(DrawType::DateTime);
-        bar->ajout_module(std::move(dt), BarArea::Middle);
-
-        std::unique_ptr<DateTime> dt2 = std::make_unique<DateTime>(DrawType::Time);
-        bar->ajout_module(std::move(dt2), BarArea::Middle);
-
-        std::unique_ptr<DateTime> dt3 = std::make_unique<DateTime>(DrawType::Date);
-        bar->ajout_module(std::move(dt3), BarArea::Middle);
+        this->load_bar_modules(stdscr_);
     }
 
 }
@@ -28,6 +19,21 @@ MainEngine::~MainEngine() {
     for (WINDOW* win : windows) {
         delwin(win);
     }
+}
+
+
+void MainEngine::load_bar_modules(WINDOW* stdscr)
+{
+    bar = std::make_unique<Bar>(stdscr, is_linux_console);
+        
+    std::unique_ptr<DateTime> dt = std::make_unique<DateTime>(DrawType::DateTime);
+    bar->ajout_module(std::move(dt), BarArea::Middle);
+
+    std::unique_ptr<DateTime> dt2 = std::make_unique<DateTime>(DrawType::Time);
+    bar->ajout_module(std::move(dt2), BarArea::Left);
+
+    std::unique_ptr<DateTime> dt3 = std::make_unique<DateTime>(DrawType::Date);
+    bar->ajout_module(std::move(dt3), BarArea::Right);
 }
 
 WINDOW* MainEngine::new_window(const std::string& name)
@@ -66,6 +72,10 @@ WINDOW* MainEngine::new_window(const std::string& name)
 
 void MainEngine::update_layout()
 {
+    if (display_bar) {
+        this->load_bar_modules(stdscr);
+    }
+
     if (windows.empty())
         return;
 

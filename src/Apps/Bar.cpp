@@ -2,22 +2,32 @@
 
 
 
-Bar::Bar(WINDOW* stdscr_)
-    : stdscr(stdscr_), is_linux_console(false)
+Bar::Bar(WINDOW* stdscr_, bool is_linux_console_)
+    : stdscr(stdscr_), is_linux_console(is_linux_console_)
 {
     // On récupère la taille actuelle de la fenêtre
     getmaxyx(stdscr, rows, cols);
 
+
+    // Si je met pas ça, c'est pas beau, allez savoir...
+    if (cols % 2 == 1) {
+        cols -= 1;
+    }
+
+
     // On créer un window qui correspond à la barre
     int h = 3;
-    int w = cols-1;
+    int w = cols;
     int y = 0;
     int x = 0;
 
+
+    // La fenêtre qui représente la barre
     win = newwin(h, w, y, x);
 
+    
     // On créer le cadre qui représente la barre
-    cadre = Cadre(win, {0, 0}, {2, cols-2}, is_linux_console);
+    cadre = Cadre(win, {0, 0}, {2, w}, is_linux_console);
 }
 
 
@@ -119,7 +129,7 @@ void Bar::draw_middle()
 void Bar::draw_right()
 {
     // Commencer par la droite et remplir vers la gauche
-    int cursor = cols - 2 - 1;  // Position de droite               -1 car décalage, jsp
+    int cursor = cols - 1;  // Position de droite               -1 car décalage, jsp
     for (int i = static_cast<int>(right.size()) - 1; i >= 0; i--) {
         auto& m = right[i];
         cursor -= m->size;  // Décrémenter d'abord pour obtenir la position gauche du module

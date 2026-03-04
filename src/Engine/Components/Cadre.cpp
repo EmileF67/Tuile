@@ -32,9 +32,9 @@ Cadre::Cadre(WINDOW* stdscr, std::pair<int,int> x_, std::pair<int,int> y_, bool 
       is_linux_console(is_linux_console_)
 {
     if (is_linux_console) {
-        color = 5;
+        color = 5;  // blanc
     } else {
-        color = 6;
+        color = 6;  // gris
     }
 }
 

@@ -491,7 +491,7 @@ void FileManager::draw_messagebox()
 void FileManager::draw_header(int top, int left, int bottom, int right, std::string* display_text)
 {
     // Cadre
-    Cadre cadre(win, {0, 0}, {bottom + 1, right + 1}, is_linux_console);
+    Cadre cadre(win, {0, 0}, {bottom + 1, right + 2}, is_linux_console);
     cadre.draw();
     cadre.cut_horizontal(top);
 
@@ -602,9 +602,9 @@ void FileManager::draw_entries(int top, int left, int bottom, int right)
             color = 4; // jaune
         } else {
             if (is_linux_console) {
-                color = 5; // gris
+                color = 5; // blanc
             } else {
-                color = 6; // blanc
+                color = 6; // gris
             }
         }
 
