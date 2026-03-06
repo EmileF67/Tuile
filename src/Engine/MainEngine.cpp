@@ -2,7 +2,7 @@
 #include "Apps/BarComponents/DateTime.h"
 #include <ncurses.h>
 
-#define MAX_DISPLAYED_WINDOWS 2
+#define MAX_DISPLAYED_WINDOWS 10
 
 MainEngine::MainEngine(WINDOW* stdscr_, bool is_linux_console_)
     : stdscr(stdscr_), is_linux_console(is_linux_console_), rows(0), cols(0), display_bar(true), popup_type(PopupType::None)
@@ -50,20 +50,25 @@ WINDOW* MainEngine::new_window(const std::string& name)
     int x = 0;
 
     // [TODO] Diviser par windows.size()+1 pour répartir la taille équitablement
-    if (windows.size() == 1) {
-        w = cols / 2;
-        x = cols / 2;
-    }
+    // if (windows.size() == 1) {
+    //     w = cols / 2;
+    //     x = cols / 2;
+    // }
+
+    int num_windows = static_cast<int>(windows.size());
+    w = (num_windows == 0) ? cols : cols / num_windows;
+    x = (num_windows == 0) ? 0    : (cols / num_windows) * num_windows;
 
     if (display_bar) {
         h -= 3;
         y += 3;
     }
-
+    
+    
     WINDOW* win = newwin(h, w, y, x);
     windows.push_back(win);
     window_names.push_back(name);
-
+    
     // Recalcul complet après ajout
     update_layout();
 
@@ -81,16 +86,27 @@ void MainEngine::update_layout()
 
     getmaxyx(stdscr, rows, cols);
 
+    // Si je met pas ça, c'est pas beau, allez savoir...
+    if (cols % 2 == 1) {
+        cols -= 1;
+    }
+
     for (size_t i = 0; i < windows.size(); ++i) {
         int new_h = rows;
         int new_w = cols;
         int new_y = 0;
         int new_x = 0;
 
-        if (windows.size() == 2) {
-            new_w = cols / 2;
-            new_x = (i == 0) ? 0 : cols / 2;
-        }
+        // if (windows.size() == 2) {
+        //     new_w = cols / 2;
+        //     new_x = (i == 0) ? 0 : cols / 2;
+        // }
+        
+        int num_windows = static_cast<int>(windows.size());
+        // new_w = cols / num_windows - 1;
+        // new_x = (cols / num_windows) * i;
+        new_w = (num_windows == 0) ? cols : cols / num_windows;
+        new_x = (num_windows == 0) ? 0    : (cols / num_windows) * i;
 
         if (display_bar) {
             new_h -= 3;

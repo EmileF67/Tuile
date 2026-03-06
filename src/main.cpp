@@ -61,25 +61,11 @@ int main(int argc, char** argv) {
     // Notre seul et unique Main Engine
     std::unique_ptr<MainEngine> mEngine = std::make_unique<MainEngine>(stdscr, is_linux_console);
 
-    // On créer nos deux fenêtres
-    WINDOW* win1 = mEngine->new_window("FileManager1");
-    WINDOW* win2 = mEngine->new_window("FileManager2");
+    // Vecteur pour stocker les FileManagers
+    std::vector<std::unique_ptr<FileManager>> fileManagers;
 
-    // On créer notre FileManager n°1 avec les coordonnées relatives à sa fenêtre
-    FileManager fm1(win1, *mEngine, start_path, true, false, is_linux_console);
-    fm1.refresh_entries();
-
-    // On créer notre FileManager n°2 avec les coordonnées relatives à sa fenêtre
-    FileManager fm2(win2, *mEngine, start_path, true, false, is_linux_console);
-    fm2.refresh_entries();
-
-    // On met le focus sur la fenêtre n°1
-    int focus = 1;
-    fm1.toggle_focus();
-
-    // On affiche les deux
-    fm1.draw();
-    fm2.draw();
+    // On met le focus à -1 (aucun FileManager)
+    int focus = -1;
 
     // On affiche la barre
     mEngine->draw_bar();
@@ -126,6 +112,14 @@ int main(int argc, char** argv) {
 
         int ch = getch();
 
+
+
+        for (auto& fm : fileManagers) {
+            fm->draw();
+        }
+
+        mEngine->refresh_all_and_update();
+
         // --- Ctrl + Q ---
         // if (ch == 17) {
         //     running = false;
@@ -143,43 +137,66 @@ int main(int argc, char** argv) {
             // continue;
 
             if (mEngine->detect_resizing()) {
-                fm1.draw();
-                fm2.draw();
+                werase(stdscr);
+
+                for (auto& fm : fileManagers) {
+                    fm->draw();
+                }
                 mEngine->draw_bar();
                 mEngine->draw_popup();
                 mEngine->refresh_all_and_update();
             }
 
-        } else if (ch != ERR) {
-            // Gérer le changement de focus
-            if (ch == 'a' && !mEngine->has_active_popup() && !fm1.is_editing_path() && !fm2.is_editing_path()) {
-                if (focus != 1) {
-                    fm1.toggle_focus();
-                    fm2.toggle_focus();
-                    focus = 1;
-                }
-            } else if (ch == 'p' && !mEngine->has_active_popup() && !fm1.is_editing_path() && !fm2.is_editing_path()) {
-                if (focus != 2) {
-                    fm1.toggle_focus();
-                    fm2.toggle_focus();
-                    focus = 2;
-                }
-            } else {
-                // Les FileManagers gèrent les popups eux-mêmes
-                switch (focus) {
-                    case 1:
-                        fm1.handle_key(ch);
-                        break;
+        } else if (ch == '+' && 
+                   !mEngine->has_active_popup() &&
+                   (focus < 0 || !fileManagers[focus]->is_editing_path())) 
+        {
+            werase(stdscr);
 
-                    case 2:
-                        fm2.handle_key(ch);
-                        break;
+            // Créer un nouveau FileManager
+            WINDOW* new_win = mEngine->new_window("FileManager" + std::to_string(fileManagers.size() + 1));
+            std::string new_fm_path = (focus >= 0) ? fileManagers[focus]->get_cwd() : start_path;
+            auto new_fm = std::make_unique<FileManager>(new_win, *mEngine, new_fm_path, true, false, is_linux_console);
+            new_fm->refresh_entries();
+            new_fm->draw();
+            mEngine->refresh_all_and_update();
+            
+            // Si c'est le premier FileManager, lui donner le focus
+            if (fileManagers.empty()) {
+                new_fm->toggle_focus();
+                focus = 0;
+            }
+            
+            fileManagers.push_back(std::move(new_fm));
+
+        } else if (ch != ERR && focus >= 0) {
+            // Gérer le changement de focus
+            bool focus_changed = false;
+            int new_focus = focus;
+
+            if (ch >= '1' && ch <= '9' && !mEngine->has_active_popup() && !fileManagers[focus]->is_editing_path()) {
+                // Changer le focus vers le FileManager numéro (ch - '1')
+                int target_focus = ch - '1';
+                if (target_focus >= 0 && target_focus < (static_cast<int>(fileManagers.size())) && target_focus != focus) {
+                    new_focus = target_focus;
+                    focus_changed = true;
                 }
             }
 
-            // Redessiner les deux filemanagers
-            fm1.draw();
-            fm2.draw();
+            if (focus_changed) {
+                // Changer le focus
+                fileManagers[focus]->set_focused(false);
+                focus = new_focus;
+                fileManagers[focus]->set_focused(true);
+            } else {
+                // Le FileManager avec le focus gère les touches
+                fileManagers[focus]->handle_key(ch);
+            }
+
+            // Redessiner tous les filemanagers
+            for (auto& fm : fileManagers) {
+                fm->draw();
+            }
 
             // Afficher la barre
             mEngine->draw_bar();
@@ -189,10 +206,11 @@ int main(int argc, char** argv) {
 
             mEngine->refresh_all_and_update();
 
-        } else if (fm1.is_editing_path() || fm2.is_editing_path()) {
+        } else if (focus >= 0 && fileManagers[focus]->is_editing_path()) {
             // Redessiner si on est en train d'éditer le chemin, même sans input
-            fm1.draw();
-            fm2.draw();
+            for (auto& fm : fileManagers) {
+                fm->draw();
+            }
             mEngine->draw_bar();
             mEngine->draw_popup();
             mEngine->refresh_all_and_update();
@@ -203,12 +221,9 @@ int main(int argc, char** argv) {
         }
 
         // Placer le curseur après chaque redessinage (surtout important pour editing_path)
-        if (fm1.is_editing_path()) {
-            fm1.place_cursor();
-            wrefresh(fm1.get_win());
-        } else if (fm2.is_editing_path()) {
-            fm2.place_cursor();
-            wrefresh(fm2.get_win());
+        if (focus >= 0 && fileManagers[focus]->is_editing_path()) {
+            fileManagers[focus]->place_cursor();
+            wrefresh(fileManagers[focus]->get_win());
         }
     }
 

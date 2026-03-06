@@ -139,6 +139,10 @@ void FileManager::toggle_focus() {
     focused = focused == false;
 }
 
+void FileManager::set_focused(bool focused_state) {
+    focused = focused_state;
+}
+
 void FileManager::compute_inner_area(int& top, int& left, int& bottom, int& right)
 {
     int rows, cols;

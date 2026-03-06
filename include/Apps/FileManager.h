@@ -146,6 +146,9 @@ class FileManager {
         // Permet de changer le statut de focus
         void toggle_focus();
 
+        // Permet de définir explicitement le focus
+        void set_focused(bool focused_state);
+
         // Place le curseur dans le cas où on est entrain d'éditer le chemin à la main
         void place_cursor();
         
