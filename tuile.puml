@@ -1,0 +1,371 @@
+@startuml
+
+' -----------------------------------------------------------------
+' Main Engine et App
+' -----------------------------------------------------------------
+
+class MainEngine {
+    - stdscr : WINDOW*
+    - is_linux_console : bool
+    - windows : std::vector<WINDOW*>
+    - window_names : std::vector<std::string>
+    - rows : int
+    - cols : int
+    - display_bar : bool
+    - popup_type : PopupType
+    - popup_info : std::unique_ptr<PopupInfo>
+    - popup_input_text : std::unique_ptr<PopupInputText>
+    - popup_double_choices : std::unique_ptr<PopupDoubleChoices>
+    - bar : std::unique_ptr<Bar>
+    - update_layout() : void
+    + MainEngine(stdscr_ : WINDOW*, is_linux_console_ : bool)
+    + ~MainEngine()
+    + new_window(name : const std::string&) : WINDOW*
+    + refresh_all_and_update() : void
+    + detect_resizing() : bool
+    + global_handle_key(key : int) : bool
+    + load_bar_modules(stdscr : WINDOW*) : void
+    + create_info_popup(label : std::string) : void
+    + create_input_popup(label : std::string) : void
+    + create_double_choices_popup(label : std::string, choices : Choices) : void
+    + is_popup_done() : bool
+    + has_active_popup() : bool
+    + get_input_popup_value() : std::string
+    + get_double_choices_popup_value() : short
+    + draw_popup() : void
+    + draw_bar() : void
+    + reset_popups() : void
+}
+
+class System {
+    + static isLinuxConsole() : bool
+}
+
+enum BarArea {
+    Left
+    Middle
+    Right
+}
+
+' -----------------------------------------------------------------
+' Cadre / UI widgets
+' -----------------------------------------------------------------
+
+class Cadre {
+    - win : WINDOW*
+    - x : std::pair<int,int>
+    - y : std::pair<int,int>
+    - is_linux_console : bool
+    - color : short
+    + Cadre()
+    + Cadre(stdscr : WINDOW*, x_ : std::pair<int,int>, y_ : std::pair<int,int>, is_linux_console_ : bool)
+    + draw() : void
+    + cut_horizontal(row : int) : void
+    + cut_vertical(col : int) : void
+}
+
+class Input {
+    - win : WINDOW*
+    - x : int
+    - y : int
+    - length : int
+    - view_text : bool
+    - input_text : std::string
+    - entered : bool
+    - cursor_pos : int
+    + Input(stdscr : WINDOW*, x_ : int, y_ : int, length_ : int, view_text_ : bool = false)
+    + ~Input()
+    + draw() : void
+    + handle_key(key : int) : void
+    + is_entered() : bool
+    + get_text() : std::string
+    + set_text(texte : std::string) : void
+}
+
+class MessageBox {
+    - win : WINDOW*
+    - message : std::string
+    - is_linux_console : bool
+    - rows : int
+    - cols : int
+    - x1 : int
+    - y1 : int
+    - x2 : int
+    - y2 : int
+    - cadre : std::unique_ptr<Cadre>
+    - entered : bool
+    + MessageBox(win_ : WINDOW*, message_ : const std::string&, is_linux_console_ : bool)
+    + draw() : void
+    + handle_key(key : int) : void
+    + is_entered() : bool
+    - split_text(taille_max : size_t) : std::vector<std::string>
+}
+
+' -----------------------------------------------------------------
+' Popup (info/input/choices)
+' -----------------------------------------------------------------
+
+enum PopupType {
+    None
+    Info
+    InputText
+    DoubleChoices
+}
+
+class Popup {
+    # cadre : std::unique_ptr<Cadre>
+    # win : WINDOW*
+    # stdscr : WINDOW*
+    # rows : int
+    # cols : int
+    # entered : bool
+    # is_linux_console : bool
+    # height : int
+    # width : int
+    + titre : std::string
+    + label : std::string
+    + Popup(stdscr_ : WINDOW*, titre_ : std::string, label_ : std::string, is_linux_console_ : bool)
+    + ~Popup()
+    + get_win() : WINDOW*
+    + is_entered() : bool
+    # draw_base() : void
+    # handle_key_base(key : int) : bool
+}
+
+class PopupInfo {
+    - button_name : std::string
+    + PopupInfo(stdscr_ : WINDOW*, label_ : std::string, is_linux_console_ : bool)
+    + ~PopupInfo()
+    + draw() : void
+    + handle_key(key : int) : void
+}
+
+class PopupInputText {
+    - input : std::unique_ptr<Input>
+    + PopupInputText(stdscr_ : WINDOW*, label_ : std::string, is_linux_console_ : bool)
+    + ~PopupInputText()
+    + get_text() : std::string
+    + get_input() : Input*
+    + draw() : void
+    + handle_key(key : int) : void
+}
+
+class PopupDoubleChoices {
+    - choices : Choices
+    - selected : short
+    + PopupDoubleChoices(stdscr_ : WINDOW*, label_ : std::string, choices_ : Choices, is_linux_console_ : bool)
+    + ~PopupDoubleChoices()
+    + get_selected() : short
+    + set_selected(indice : short) : void
+    + get_choices() : Choices
+    + draw() : void
+    + draw_both_choices() : void
+    + handle_key(key : int) : void
+}
+
+' -----------------------------------------------------------------
+' Bar and Modules
+' -----------------------------------------------------------------
+
+class Bar {
+    - left : std::vector<std::unique_ptr<Module>>
+    - middle : std::vector<std::unique_ptr<Module>>
+    - right : std::vector<std::unique_ptr<Module>>
+    - stdscr : WINDOW*
+    - rows : int
+    - cols : int
+    - is_linux_console : bool
+    - win : WINDOW*
+    - cadre : Cadre
+    + Bar(stdscr_ : WINDOW*, is_linux_console_ : bool)
+    + ~Bar()
+    + get_win() : WINDOW*
+    + ajout_module(module : std::unique_ptr<Module>, area : BarArea) : void
+    + draw() : void
+    - draw_left() : void
+    - draw_middle() : void
+    - draw_right() : void
+}
+
+class Module {
+    # win : WINDOW*
+    # refresh_time : std::time_t
+    # last_drawn : std::time_t
+    + size : int
+    + Module(refresh_time_ : std::time_t, size_ : int)
+    + set_win(win_ : WINDOW*) : void
+    + should_be_drawn() : bool
+    + draw(x : int) : void
+    + ~Module()
+}
+
+class DateTime {
+    - drawtype : DrawType
+    - now : std::time_t
+    + DateTime(drawtype_ : DrawType)
+    + update_draw_type(drawtype_ : DrawType) : void
+    + draw(x : int) : void
+    - draw_time(x : int) : void
+    - draw_date(x : int) : void
+    - draw_datetime(x : int) : void
+    - draw_timedate(x : int) : void
+}
+
+enum DrawType {
+    Time
+    Date
+    DateTime
+    TimeDate
+}
+
+class SystemUsage {
+    - datatype : DataType
+    + SystemUsage(datatype_ : DataType)
+    + draw(x : int) : void
+    - extract_cpu_data() : short
+    - extract_gpu_data() : short
+    - extract_ram_data() : short
+    - extract_swap_data() : short
+    - draw_cpu_data(x : int) : void
+    - draw_gpu_data(x : int) : void
+    - draw_ram_data(x : int) : void
+    - draw_swap_data(x : int) : void
+}
+
+enum DataType {
+    Cpu
+    Gpu
+    Ram
+    Swap
+}
+
+' -----------------------------------------------------------------
+' File manager
+' -----------------------------------------------------------------
+
+class FileManager {
+    - mEngine : MainEngine&
+    - win : WINDOW*
+    - inner_top : int
+    - inner_left : int
+    - inner_bottom : int
+    - inner_right : int
+    - start_path : std::string
+    - display_size : bool
+    - display_dotfiles : bool
+    - is_linux_console : bool
+    - editing_path : bool
+    - path_input : std::string
+    - cwd : std::string
+    - entries : std::vector<std::string>
+    - selected : int
+    - scroll_offset : int
+    - input_new : bool
+    - nouveau : int
+    - input_new_name : bool
+    - new_name : std::string
+    - remove_element : bool
+    - rename_element : bool
+    - new_rename : std::string
+    - copying : bool
+    - copy_mode : std::string
+    - path_to_copy : std::string
+    - editor : std::string
+    - msgbox : std::unique_ptr<MessageBox>
+    - cursor_on : bool
+    - aSpace : bool
+    - display_icons : bool
+    - display_perms : bool
+    - clipboard : Clipboard
+    - focused : bool
+    - top_curseur : int
+    - left_curseur : int
+    + FileManager(stdscr : WINDOW*, mEngine_ : MainEngine&, start_path_ : const std::string&, display_size_ : bool, display_dotfiles_ : bool, is_linux_console_ : bool)
+    + ~FileManager()
+    + draw() : void
+    + handle_key(key : int) : void
+    + refresh_entries() : void
+    + get_cwd() : std::string
+    + get_win() : WINDOW*
+    + is_editing_path() : bool
+    + toggle_focus() : void
+    + set_focused(focused_state : bool) : void
+    + place_cursor() : void
+    - copy_to_path() : void
+    - tri_dossiers_fichiers(lst : const std::vector<std::string>&) : std::vector<std::string>
+    - human_readable_size(size : long long) : std::string
+    - draw_header(top : int, left : int, bottom : int, right : int, display_text : std::string*) : void
+    - draw_entries(top : int, left : int, bottom : int, right : int) : void
+    - draw_popups() : void
+    - draw_messagebox() : void
+    - get_entry_display_info(entry : std::string) : EntryDisplay
+    - compute_inner_area(top : int&, left : int&, bottom : int&, right : int&) : void
+}
+
+struct EntryDisplay {
+    + icon : std::string
+    + size : std::string
+    + color : attr_t
+    + color_bg : attr_t
+    + permissions : std::string
+}
+
+enum ClipboardMode {
+    None
+    Copy
+    Cut
+}
+
+struct ClipboardItem {
+    + path : std::filesystem::path
+}
+
+struct Clipboard {
+    + mode : ClipboardMode
+    + items : std::unordered_set<std::filesystem::path>
+    + clear() : void
+    + empty() : bool
+    + contains(item : const std::filesystem::path&) : bool
+    + toggle(item : const std::filesystem::path&) : void
+}
+
+' -----------------------------------------------------------------
+' Relations
+' -----------------------------------------------------------------
+
+MainEngine "1" *-- "1" PopupInfo
+MainEngine "1" *-- "1" PopupInputText
+MainEngine "1" *-- "1" PopupDoubleChoices
+MainEngine "1" *-- "1" Bar
+MainEngine "1" *-- "1" System
+MainEngine "1" *-- "1" FileManager
+
+Bar "1" *-- "0..*" Module
+Module <|-- DateTime
+Module <|-- SystemUsage
+
+PopupInfo --|> Popup
+PopupInputText --|> Popup
+PopupDoubleChoices --|> Popup
+
+PopupInputText --> Input
+PopupInfo --> Cadre
+PopupInputText --> Cadre
+PopupDoubleChoices --> Cadre
+MessageBox --> Cadre
+Bar --> Cadre
+
+FileManager --> MainEngine
+FileManager --> MessageBox
+
+FileManager --> Clipboard
+FileManager --> ClipboardItem
+FileManager --> EntryDisplay
+
+PopupType .. Popup
+BarArea .. Bar
+DrawType .. DateTime
+ClipboardMode .. FileManager
+DataType .. SystemUsage
+
+@enduml
