@@ -52,6 +52,7 @@ int main(int argc, char** argv) {
         init_pair(8,  COLOR_BLACK, COLOR_GREEN  );  // bg fichier
         init_pair(9,  COLOR_BLACK, COLOR_CYAN   );  // bg dossier sélectionné
         init_pair(10, COLOR_BLACK, COLOR_YELLOW );  // bg fichier sélectionné
+        init_pair(11, COLOR_BLACK, COLOR_WHITE  );  // bg type data module
     }
 
     // Déterminer le chemin de démarrage
@@ -217,6 +218,7 @@ int main(int argc, char** argv) {
         } else {
             // Timeout du getch - redessiner pour les modules dynamiques (DateTime etc)
             mEngine->draw_bar();
+            mEngine->draw_popup();
             mEngine->refresh_all_and_update();
         }
 
