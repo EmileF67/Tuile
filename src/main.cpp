@@ -42,17 +42,18 @@ int main(int argc, char** argv) {
         start_color();
         use_default_colors();
 
-        init_pair(1,  COLOR_BLUE,   -1);            // dossier
-        init_pair(2,  COLOR_GREEN,  -1);            // fichier
-        init_pair(3,  COLOR_CYAN,   -1);            // dossier sélectionné
-        init_pair(4,  COLOR_YELLOW, -1);            // fichier sélectionné
+        init_pair(1,  COLOR_BLUE,   -1);            // dossier                  && affichage pourcentage
+        init_pair(2,  COLOR_GREEN,  -1);            // fichier                  && affichage pourcentage
+        init_pair(3,  COLOR_CYAN,   -1);            // dossier sélectionné      && affichage pourcentage
+        init_pair(4,  COLOR_YELLOW, -1);            // fichier sélectionné      && affichage pourcentage
         init_pair(5,  COLOR_WHITE,  -1);            // taille
-        init_pair(6,  COLOR_GREY,   -1);            // taille && cadre (gris)
+        init_pair(6,  COLOR_GREY,   -1);            // taille                   && cadre (gris)
         init_pair(7,  COLOR_BLACK, COLOR_BLUE   );  // bg dossier
         init_pair(8,  COLOR_BLACK, COLOR_GREEN  );  // bg fichier
         init_pair(9,  COLOR_BLACK, COLOR_CYAN   );  // bg dossier sélectionné
         init_pair(10, COLOR_BLACK, COLOR_YELLOW );  // bg fichier sélectionné
         init_pair(11, COLOR_BLACK, COLOR_WHITE  );  // bg type data module
+        init_pair(12, COLOR_RED,    -1);            // affichage pourcentage
     }
 
     // Déterminer le chemin de démarrage

@@ -4,14 +4,14 @@
 #include <cstring>
 
 
-#define REFRESH_TIME       1
-#define SIZE_OF_DATETIME   21
-#define SIZE_OF_TIME_ALONE 8
-#define SIZE_OF_DATE_ALONE 10
+#define REFRESH_TIME_DATETIME 1
+#define SIZE_OF_DATETIME      21
+#define SIZE_OF_TIME_ALONE    8
+#define SIZE_OF_DATE_ALONE    10
 
 
 DateTime::DateTime(DrawType drawtype_)
-    : Module(REFRESH_TIME, SIZE_OF_DATETIME), drawtype(drawtype_), now(std::time(nullptr))
+    : Module(REFRESH_TIME_DATETIME, SIZE_OF_DATETIME), drawtype(drawtype_), now(std::time(nullptr))
 {
     switch (drawtype_) {
         case DrawType::Time :

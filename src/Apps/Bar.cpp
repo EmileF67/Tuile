@@ -97,6 +97,10 @@ void Bar::draw_left()
 
 void Bar::draw_middle()
 {
+    if (middle.empty()) {
+        return;
+    }
+
     // Calcul de la taille totale accumulée des modules du milieu
     int total_size = 0;
     for (auto& m : middle) {
@@ -140,6 +144,6 @@ void Bar::draw_right()
             cursor--;
             cadre.cut_vertical(cursor);  // Séparation à gauche du module
         }
-        cursor--;  // Espacement
+        // cursor--;  // Espacement
     }
 }

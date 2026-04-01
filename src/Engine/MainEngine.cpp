@@ -1,5 +1,6 @@
 #include "Engine/MainEngine.h"
 #include "Apps/BarComponents/DateTime.h"
+#include "Apps/BarComponents/SystemUsage.h"
 #include <ncurses.h>
 
 #define MAX_DISPLAYED_WINDOWS 10
@@ -26,14 +27,28 @@ void MainEngine::load_bar_modules(WINDOW* stdscr)
 {
     bar = std::make_unique<Bar>(stdscr, is_linux_console);
         
+
+    // DateHeure
     std::unique_ptr<DateTime> dt = std::make_unique<DateTime>(DrawType::DateTime);
-    bar->ajout_module(std::move(dt), BarArea::Middle);
+    bar->ajout_module(std::move(dt), BarArea::Left);
 
-    std::unique_ptr<DateTime> dt2 = std::make_unique<DateTime>(DrawType::Time);
-    bar->ajout_module(std::move(dt2), BarArea::Left);
+    // ---
 
-    std::unique_ptr<DateTime> dt3 = std::make_unique<DateTime>(DrawType::Date);
-    bar->ajout_module(std::move(dt3), BarArea::Right);
+    // Cpu
+    std::unique_ptr<SystemUsage> su = std::make_unique<SystemUsage>(DataType::Cpu);
+    bar->ajout_module(std::move(su), BarArea::Right);
+
+    // Gpu
+    std::unique_ptr<SystemUsage> su1 = std::make_unique<SystemUsage>(DataType::Gpu);
+    bar->ajout_module(std::move(su1), BarArea::Right);
+
+    // Swap
+    std::unique_ptr<SystemUsage> su2 = std::make_unique<SystemUsage>(DataType::Ram);
+    bar->ajout_module(std::move(su2), BarArea::Right);
+
+    // Ram
+    std::unique_ptr<SystemUsage> su3 = std::make_unique<SystemUsage>(DataType::Swap);
+    bar->ajout_module(std::move(su3), BarArea::Right);
 }
 
 WINDOW* MainEngine::new_window(const std::string& name)
