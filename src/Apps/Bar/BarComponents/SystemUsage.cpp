@@ -1,4 +1,4 @@
-#include "Apps/BarComponents/SystemUsage.h"
+#include "Apps/Bar/BarComponents/SystemUsage.h"
 
 #include <glob.h>
 

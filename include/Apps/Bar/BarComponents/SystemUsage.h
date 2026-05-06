@@ -2,7 +2,7 @@
 #define SYSTEMUSAGE_H
 
 
-#include "Apps/BarComponents/Module.h"
+#include "Apps/Bar/BarComponents/Module.h"
 #include <string>
 #include <fstream>
 #include <sstream>

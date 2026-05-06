@@ -1,4 +1,4 @@
-#include "Apps/BarComponents/DateTime.h"
+#include "Apps/Bar/BarComponents/DateTime.h"
 #include "ncurses.h"
 #include <ctime>
 #include <cstring>

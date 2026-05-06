@@ -6,7 +6,7 @@
 #include <memory>
 #include <utility>
 #include "Engine/Components/Cadre.h"
-#include "Apps/BarComponents/Module.h"
+#include "Apps/Bar/BarComponents/Module.h"
 
 
 enum class BarArea {

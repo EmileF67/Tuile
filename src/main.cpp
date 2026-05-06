@@ -7,7 +7,7 @@
 
 #include "Engine/MainEngine.h"
 
-#include "Apps/FileManager.h"
+#include "Apps/FileManager/FileManager.h"
 #include "Engine/System.h"
 
 // Gérer le Ctrl + C

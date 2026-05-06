@@ -1,4 +1,4 @@
-#include "Apps/BarComponents/Module.h"
+#include "Apps/Bar/BarComponents/Module.h"
 
 
 Module::Module(std::time_t refresh_time_, int size_)

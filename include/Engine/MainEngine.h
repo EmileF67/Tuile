@@ -2,7 +2,7 @@
 #define MAINENGINE_H
 
 #include "Engine/Components/Popup2.h"
-#include "Apps/Bar.h"
+#include "Apps/Bar/Bar.h"
 #include <ncurses.h>
 #include <string>
 #include <vector>

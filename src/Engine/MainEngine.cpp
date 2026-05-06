@@ -1,6 +1,6 @@
 #include "Engine/MainEngine.h"
-#include "Apps/BarComponents/DateTime.h"
-#include "Apps/BarComponents/SystemUsage.h"
+#include "Apps/Bar/BarComponents/DateTime.h"
+#include "Apps/Bar/BarComponents/SystemUsage.h"
 #include <ncurses.h>
 
 #define MAX_DISPLAYED_WINDOWS 10
