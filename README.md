@@ -49,44 +49,15 @@ The icons used in this project are from the Noto Color Font Emoji
 
 ### Debian / Ubuntu:
 
-**If you want a basic one :**
 ```bash
 sudo apt install fonts-noto-color-emoji
 ```
 
-**If you want a better one :**
-```bash
-cd /tmp
-wget https://github.com/ryanoasis/nerd-fonts/releases/download/v3.4.0/CascadiaCode.zip
-```
-Change `3.4.0` by the last version if needed.
-
-**From there 2 options:**
-
-- First you install it by yourself :
-```bash
-unzip CaskaydiaCove.zip -d CaskaydiaCove
-mkdir -p ~/.local/share/fonts
-cp CaskaydiaCove/*.ttf ~/.local/share/fonts/
-fc-cache -fv
-```
-- Second you use another way (Font Manager):
-```bash
-sudo apt install font-manager
-```
-
 ### Arch-based systems:
 
-**If you want a basic one :**
 ```bash
 sudo pacman -S noto-fonts-emoji
 ```
-
-**If you want a better one :**
-```bash
-yay -S nerd-fonts-caskaydia-cove
-```
-
 
 
 ## 4. Create the build directory
@@ -111,12 +82,14 @@ The compiled executable will be located at `Tuile/build/main`.
 ./build/main
 ```
 
+Or just use the `run.sh` file.
+
 Enjoy your text-based UI in the terminal!
 
 ---
 
 # Notes
 
-* The project is designed for **Linux terminals** and may not work correctly on Windows without WSL or a compatible terminal emulator.
+* The project is designed for **Linux terminals** and won't work correctly on Windows without WSL or a compatible terminal emulator.
 
 ---
