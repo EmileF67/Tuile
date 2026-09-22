@@ -1,4 +1,4 @@
-@startuml
+@startuml tuile
 
 ' -----------------------------------------------------------------
 ' Main Engine et App
@@ -49,6 +49,21 @@ package MainEngine_ {
         Right
     }
 }
+
+
+' -----------------------------------------------------------------
+' Config
+' -----------------------------------------------------------------
+
+package Config {
+
+    class Config {
+        read_config_file() : Hashmap
+    }
+}
+
+
+
 
 
 ' -----------------------------------------------------------------
@@ -352,33 +367,37 @@ package Apps.FileManager_ {
 ' Terminal
 ' -----------------------------------------------------------------
 
-package Apps.Terminal_ {
+package Apps.Terminal {
 
     class Terminal {
-        - engine_ : MainEngine&
-        - win_ : WINDOW*
-        - rows_ : int
-        - cols_ : int
-        - focused_ : bool
-        - pty_ : std::unique_ptr<Pty>
-        - buf_ : std::unique_ptr<TermBuffer>
-        - parser_ : std::unique_ptr<VtParser>
-        + Terminal(win, engine, rows, cols, shell)
+        - engine : MainEngine&
+        - win : WINDOW* <<ncurses>>
+        - rows : int
+        - cols : int
+        - focused : bool
+        - pty : std::unique_ptr<Pty>
+        - buf : std::unique_ptr<TermBuffer>
+        - parser : std::unique_ptr<VtParser>
+        + Terminal(window : WINDOW*, main_engine : MainEngine&, row_count : int, column_count : int, shell : const std::string& = "/bin/sh")
         + poll() : void
         + draw() : void
         + handle_key(key : int) : void
-        + resize(rows, cols) : void
+        + resize(rows : int, cols : int) : void
         + toggle_focus() : void
+        + get_win() : WINDOW*
     }
 
+
     class Pty {
-        - master_fd_ : int
-        - child_pid_ : pid_t
-        + spawn(rows, cols, shell) : bool
-        + read_output(buf, n) : ssize_t
-        + write_input(buf, n) : void
-        + resize(rows, cols) : void
+        - master_fd : int
+        - child_pid : pid_t <<POSIX>>
+        + Pty()
+        + spawn(rows : int, cols : int, shell : std::string) : bool
+        + read_output(buf : char*, n : std::size_t) : ssize_t <<POSIX>>
+        + write_input(buf : const char*, n : std::size_t) : void
+        + resize(rows : int, cols : int) : void
     }
+
 
     struct Cell {
         + ch : wchar_t
@@ -388,29 +407,86 @@ package Apps.Terminal_ {
         + dirty : bool
     }
 
+
     class TermBuffer {
-        - rows_ : int
-        - cols_ : int
-        - grid_ : vector<vector<Cell>>
-        - cursor_row_ : int
-        - cursor_col_ : int
-        + at(r, c) : Cell&
-        + set_cursor(r, c) : void
-        + scroll_up(top, bot) : void
-        + resize(rows, cols) : void
+        - rows : int
+        - cols : int
+        - grid : std::vector<std::vector<Cell>>
+        - cursor_row : int
+        - cursor_col : int
+        + TermBuffer(row_count : int = 24, column_count : int = 80)
+        + at(r : int, c : int) : Cell&
+        + get_rows() : int
+        + get_cols() : int
+        + get_cursor_row() : int
+        + get_cursor_col() : int
+        + set_cursor(r : int, c : int) : void
+        + scroll_up(top : int, bot : int) : void
+        + resize(row_count : int, column_count : int) : void
+        + clear(r : int, c : int, row_count : int, column_count : int, fg : short = 7, bg : short = 0, bold : bool = false) : void
+        + put(r : int, c : int, ch : wchar_t, fg : short, bg : short, bold : bool) : void
     }
 
+
     class VtParser {
-        - buf_ : TermBuffer&
-        - state_ : State
-        - csi_params_ : string
-        - cur_fg_ : short
-        - cur_bg_ : short
-        - cur_bold_ : bool
-        + feed(data, len) : void
-        - process_byte(c) : void
-        - dispatch_csi(cmd) : void
-        - apply_sgr(params) : void
+        - buf : TermBuffer*
+        - state : State
+        - csi_params : std::string
+        - intermediates : std::string
+        - cur_fg : short
+        - cur_bg : short
+        - cur_bold : bool
+        - utf8_codepoint : int
+        - utf8_remaining : int
+        - saved_row : int
+        - saved_col : int
+        - scroll_top : int
+        - scroll_bottom : int
+        - string_escape : bool
+        + VtParser(buffer : TermBuffer&)
+        + feed(data : const char*, len : std::size_t) : void
+        - process_byte(c : unsigned char) : void
+        - dispatch_csi(cmd : char) : void
+        - apply_sgr(params : const std::vector<int>&) : void
+        - print_codepoint(wc : wchar_t) : void
+        - execute_control(c : unsigned char) : void
+        - reset_parser() : void
+        - parse_params() : std::vector<int>
+        - parameter(params : const std::vector<int>&, index : std::size_t, default_value : int = 1) : int
+    }
+
+
+    enum State {
+        Ground
+        Escape
+        CsiEntry
+        CsiParam
+        CsiIntermediate
+        EscapeIntermediate
+        String
+    }
+
+
+    ' -----------------------------------------------------------------
+    ' Relations
+    ' -----------------------------------------------------------------
+
+    Terminal *-- Pty
+    Terminal *-- TermBuffer
+    Terminal *-- VtParser
+
+    TermBuffer *-- Cell
+    VtParser --> TermBuffer
+
+}
+
+
+package Apps.AppLauncher {
+    class AppLauncher {
+        - i_selected : std::size_t
+        - apps : std::vector<std::string>
+        + handle_key(key : int) : void
+        + draw() : void
     }
 }
 

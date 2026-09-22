@@ -120,7 +120,7 @@ FileManager::FileManager(
     new_rename      = "";               // Le nom donné pour renommer l'élément
     copying         = false;            // Si on est entrain de copier
     path_to_copy    = "";               // Le chemin à copier
-    editor          = "vim";            // L'éditeur défini par défaut
+    editor          = "nvim";            // L'éditeur défini par défaut
     msgbox.reset();                     // Va contenir toute instance de MessageBox
     cursor_on       = false;            // Si le curseur est activé ou non
     aSpace          = true;             // Si on veut un expace en plus après l'icône
@@ -939,9 +939,9 @@ void FileManager::handle_key(int key)
                             selected = 0;
                             scroll_offset = 0;
                         } else { // Si c'est un fichier
-                            if (editor == "vim") {
+                            if (editor == "vim" || editor == "nvim") {
                                 endwin();
-                                std::string cmd = "vim \"" + new_path.string() + "\"";
+                                std::string cmd = editor + " \"" + new_path.string() + "\"";
                                 system(cmd.c_str());
                                 wrefresh(win);
                                 doupdate();
