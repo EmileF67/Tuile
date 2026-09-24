@@ -483,11 +483,28 @@ package Apps.Terminal {
 
 package Apps.AppLauncher {
     class AppLauncher {
+        - win : WINDOW*
+        - is_linux_console : bool
         - i_selected : std::size_t
-        - apps : std::vector<std::string>
-        + handle_key(key : int) : void
+        - scroll_offset : std::size_t
+        - apps : std::vector<Apps>
+        - cadre : Cadre
+        + <<create>> AppLauncher()
         + draw() : void
+        + handle_key(key : int) : void
     }
+
+    enum Apps {
+        FileManager
+        Terminal
+    }
+
+
+    ' -----------------------------------------------------------------
+    ' Relations
+    ' -----------------------------------------------------------------
+
+    
 }
 
 

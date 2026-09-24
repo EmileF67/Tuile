@@ -34,7 +34,7 @@ int main(int argc, char** argv) {
     keypad(stdscr, TRUE);   // Active les touches spéciales
     curs_set(0);            // Cache le curseur
     
-    timeout(15); // getch() attend max 100 ms
+    timeout(15); // getch() attend max 15 ms
 
     bool is_linux_console = System::isLinuxConsole();
 
@@ -153,6 +153,8 @@ int main(int argc, char** argv) {
 
     bool running = true;
     while (running && !stop) {
+
+        
         // draw and refresh
         // clear();
 
